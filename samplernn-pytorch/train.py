@@ -16,6 +16,7 @@ import re
 import argparse
 import numpy as np
 import datetime
+import time
 
 
 
@@ -38,9 +39,9 @@ default_params = {
     'datasets_path': 'datasets',
     'results_path': 'results',
     'epoch_limit': 100,
-    'resume': True,
+    'resume': False,
     'sample_rate': 16000,
-    'n_samples': 5,
+    'n_samples': 1,
     'sample_length': 80000,
     'loss_smoothing': 0.99,
     'cuda': True,
@@ -138,6 +139,37 @@ def make_data_loader(overlap_len, params):
     return data_loader
 
 
+
+
+def generate_sample(generator, params, writer, global_step, results_path, e):
+            # generator: epoch
+            pattern = 'ep{}-s{}.wav'
+            samples = generator(params['n_samples'], params['sample_length']) \
+                        .cpu().float().numpy()
+            
+            norm_samples = ((samples[:] - samples[:].min()) / (0.00001 + (samples[:].max() - samples[:].min()))) * 1.9 - 0.95 
+            
+            if writer is not None:
+                writer.add_scalar('validation/sample average', np.mean(samples), global_step)
+                writer.add_scalar('validation/sample min', samples.max(), global_step)
+                writer.add_scalar('validation/sample max', samples.min(), global_step)
+            
+            start = time.time()
+            for i in range(params['n_samples']):
+                if writer is not None:
+                    writer.add_audio('validation/sound{}'.format(i), norm_samples[i], global_step, sample_rate=params['sample_rate'])
+                write_wav(
+                    os.path.join(
+                    os.path.join(results_path, 'samples'), pattern.format(e, i + 1)
+                    ),
+                    samples[i, :], sr=params['sample_rate'], norm=True
+                )
+            avg_time = time.time() - start
+            
+            print("== Generated {} Samples (took {} seconds to generate {} frames) ==".format(params['n_samples'], avg_time, params['sample_length']))
+
+
+
 def main(exp, frame_sizes, dataset, **params):
     params = dict(
         default_params,
@@ -175,10 +207,12 @@ def main(exp, frame_sizes, dataset, **params):
     checkpoint_data = load_last_checkpoint(checkpoints_path)
     if checkpoint_data is not None:
         (state_dict, epoch, iteration) = checkpoint_data
-        trainer.epochs = epoch
-        trainer.iterations = iteration
+        start_epoch = int(epoch)
+        global_step = iteration
         predictor.load_state_dict(state_dict)
-
+    else:
+        start_epoch = 0
+        global_step = 0
     
     
     writer = SummaryWriter("runs/{}-{}".format(params['dataset'], str(datetime.datetime.now()).split('.')[0].replace(' ', '-')))
@@ -190,8 +224,7 @@ def main(exp, frame_sizes, dataset, **params):
     generator = Generator(predictor.model, params['cuda'])
     best_val_loss = 10000000000000
     
-    global_step = 0
-    for e in range(params['epoch_limit']):
+    for e in range(start_epoch, int(params['epoch_limit'])):
         for i, data in enumerate(dataset_train):
             
             batch_inputs = data[:-1]
@@ -266,6 +299,8 @@ def main(exp, frame_sizes, dataset, **params):
 
             val_loss = loss_sum / n_examples
             writer.add_scalar('validation/validation loss', val_loss, global_step)
+            print("== Validation Step E:{:03d}: Loss={} ==".format(e, val_loss))
+            
         predictor.train()
         
         
@@ -287,30 +322,13 @@ def main(exp, frame_sizes, dataset, **params):
             best_val_loss = cur_val_loss
         
         
+        generate_sample(generator, params, writer, global_step, results_path, e)
+
         
         
+    # generate final results
+    generate_sample(generator, params, None, global_step, results_path, 0)
         
-        # generator: epoch
-        pattern = 'ep{}-s{}.wav'
-        samples = generator(params['n_samples'], params['sample_length']) \
-                      .cpu().float().numpy()
-        
-        norm_samples = ((samples[:] - samples[:].min()) / (0.00001 + (samples[:].max() - samples[:].min()))) * 1.9 - 0.95 
-        writer.add_scalar('validation/sample average', np.mean(norm_samples), global_step)
-        writer.add_scalar('validation/sample min', norm_samples.max(), global_step)
-        writer.add_scalar('validation/sample max', norm_samples.min(), global_step)
-        
-        for i in range(params['n_samples']):
-            
-            writer.add_audio('validation/sound{}'.format(i), norm_samples[i], global_step, sample_rate=params['sample_rate'])
-            write_wav(
-                os.path.join(
-                   os.path.join(results_path, 'samples'), pattern.format(e, i + 1)
-                ),
-                samples[i, :], sr=params['sample_rate'], norm=True
-            )
-        
-    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
