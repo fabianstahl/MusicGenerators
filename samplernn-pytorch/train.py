@@ -15,6 +15,7 @@ import sys
 import re
 import argparse
 import numpy as np
+import datetime
 
 
 
@@ -36,7 +37,7 @@ default_params = {
     'keep_old_checkpoints': False,
     'datasets_path': 'datasets',
     'results_path': 'results',
-    'epoch_limit': 1000,
+    'epoch_limit': 100,
     'resume': True,
     'sample_rate': 16000,
     'n_samples': 5,
@@ -180,7 +181,7 @@ def main(exp, frame_sizes, dataset, **params):
 
     
     
-    writer = SummaryWriter()
+    writer = SummaryWriter("runs/{}-{}".format(params['dataset'], str(datetime.datetime.now()).split('.')[0].replace(' ', '-')))
     
     dataset_train = data_loader(0, val_split, eval=False)
     dataset_val = data_loader(val_split, test_split, eval=True)

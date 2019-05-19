@@ -143,3 +143,15 @@ dmypy.json
 .pyre/
 
 # End of https://www.gitignore.io/api/linux,python
+
+
+
+
+
+# ignore datasets (but not script to download)
+samplernn-pytorch/datasets/*
+!samplernn-pytorch/datasets/*.sh
+
+# ignore training results
+samplernn-pytorch/results/*
+samplernn-pytorch/runs/*
