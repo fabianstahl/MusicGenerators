@@ -11,7 +11,7 @@ import numpy as np
 class SampleRNN(torch.nn.Module):
 
     def __init__(self, frame_sizes, n_rnn, dim, learn_h0, q_levels,
-                 weight_norm):
+                 weight_norm, dropout):
         super().__init__()
 
         self.dim = dim
@@ -20,7 +20,7 @@ class SampleRNN(torch.nn.Module):
         ns_frame_samples = map(int, np.cumprod(frame_sizes))
         self.frame_level_rnns = torch.nn.ModuleList([
             FrameLevelRNN(
-                frame_size, n_frame_samples, n_rnn, dim, learn_h0, weight_norm
+                frame_size, n_frame_samples, n_rnn, dim, learn_h0, weight_norm, dropout
             )
             for (frame_size, n_frame_samples) in zip(
                 frame_sizes, ns_frame_samples
@@ -28,7 +28,7 @@ class SampleRNN(torch.nn.Module):
         ])
 
         self.sample_level_mlp = SampleLevelMLP(
-            frame_sizes[0], dim, q_levels, weight_norm
+            frame_sizes[0], dim, q_levels, weight_norm, dropout
         )
 
     @property
@@ -39,7 +39,7 @@ class SampleRNN(torch.nn.Module):
 class FrameLevelRNN(torch.nn.Module):
 
     def __init__(self, frame_size, n_frame_samples, n_rnn, dim,
-                 learn_h0, weight_norm):
+                 learn_h0, weight_norm, dropout):
         super().__init__()
 
         self.frame_size = frame_size
@@ -66,7 +66,8 @@ class FrameLevelRNN(torch.nn.Module):
             input_size=dim,
             hidden_size=dim,
             num_layers=n_rnn,
-            batch_first=True
+            batch_first=True,
+            dropout=dropout
         )
         for i in range(n_rnn):
             nn.concat_init(
@@ -122,7 +123,7 @@ class FrameLevelRNN(torch.nn.Module):
 
 class SampleLevelMLP(torch.nn.Module):
 
-    def __init__(self, frame_size, dim, q_levels, weight_norm):
+    def __init__(self, frame_size, dim, q_levels, weight_norm, dropout):
         super().__init__()
 
         self.q_levels = q_levels
@@ -161,6 +162,10 @@ class SampleLevelMLP(torch.nn.Module):
         init.constant_(self.output.bias, 0)
         if weight_norm:
             self.output = torch.nn.utils.weight_norm(self.output)
+            
+        self.dropout1 = torch.nn.Dropout(dropout)
+        self.dropout2 = torch.nn.Dropout(dropout)
+        
 
     def forward(self, prev_samples, upper_tier_conditioning):
         (batch_size, _, _) = upper_tier_conditioning.size()
@@ -170,12 +175,14 @@ class SampleLevelMLP(torch.nn.Module):
         ).view(
             batch_size, -1, self.q_levels
         )
-
+        
         prev_samples = prev_samples.permute(0, 2, 1)
         upper_tier_conditioning = upper_tier_conditioning.permute(0, 2, 1)
-
+        
         x = F.relu(self.input(prev_samples) + upper_tier_conditioning)
+        x = self.dropout1(x)
         x = F.relu(self.hidden(x))
+        x = self.dropout2(x)
         x = self.output(x).permute(0, 2, 1).contiguous()
 
         return F.log_softmax(x.view(-1, self.q_levels), dim=1) \
@@ -252,7 +259,7 @@ class Generator(Runner):
         sequences = torch.LongTensor(n_seqs, self.model.lookback + seq_len) \
                          .fill_(utils.q_zero(self.model.q_levels))
         frame_level_outputs = [None for _ in self.model.frame_level_rnns]
-        
+        self.model.eval()
         with torch.no_grad():
         
             for i in range(self.model.lookback, self.model.lookback + seq_len):
@@ -294,5 +301,5 @@ class Generator(Runner):
                 sequences[:, i] = sample_dist.multinomial(1).squeeze(1)
 
         torch.backends.cudnn.enabled = True
-
+        self.model.train()
         return sequences[:, self.model.lookback :]

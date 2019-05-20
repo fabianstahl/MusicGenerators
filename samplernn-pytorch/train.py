@@ -20,11 +20,13 @@ import time
 
 
 
+# dropout probability
+
 
 
 default_params = {
     # model parameters
-    'n_rnn': 1,
+    'n_rnn': 3,
     'dim': 1024,
     'learn_h0': True,
     'q_levels': 256,
@@ -33,6 +35,8 @@ default_params = {
     'batch_size': 128,
     'val_frac': 0.1,
     'test_frac': 0.1,
+    'dropout': 0.0,
+    'lr': 0.001,
 
     # training parameters
     'keep_old_checkpoints': False,
@@ -50,7 +54,7 @@ default_params = {
 
 tag_params = [
     'exp', 'frame_sizes', 'n_rnn', 'dim', 'learn_h0', 'q_levels', 'seq_len',
-    'batch_size', 'dataset', 'val_frac', 'test_frac'
+    'batch_size', 'dataset', 'val_frac', 'test_frac', 'dropout', 'lr'
 ]
 
 def param_to_string(value):
@@ -166,7 +170,7 @@ def generate_sample(generator, params, writer, global_step, results_path, e):
                 )
             avg_time = time.time() - start
             
-            print("== Generated {} Samples (took {} seconds to generate {} frames) ==".format(params['n_samples'], avg_time, params['sample_length']))
+            print("== Generated {} Samples ==".format(params['n_samples']))
 
 
 
@@ -188,14 +192,15 @@ def main(exp, frame_sizes, dataset, **params):
         dim=params['dim'],
         learn_h0=params['learn_h0'],
         q_levels=params['q_levels'],
-        weight_norm=params['weight_norm']
+        weight_norm=params['weight_norm'],
+        dropout=params['dropout']
     )
     predictor = Predictor(model)
     if params['cuda']:
         model = model.cuda()
         predictor = predictor.cuda()
 
-    optimizer = gradient_clipping(torch.optim.Adam(predictor.parameters()))
+    optimizer = gradient_clipping(torch.optim.Adam(predictor.parameters(), lr=params['lr']))
 
     data_loader = make_data_loader(model.lookback, params)
     test_split = 1 - params['test_frac']
@@ -209,6 +214,7 @@ def main(exp, frame_sizes, dataset, **params):
         (state_dict, epoch, iteration) = checkpoint_data
         start_epoch = int(epoch)
         global_step = iteration
+        start_epoch = iteration
         predictor.load_state_dict(state_dict)
     else:
         start_epoch = 0
@@ -311,14 +317,14 @@ def main(exp, frame_sizes, dataset, **params):
             pattern = os.path.join(checkpoints_path, last_pattern.format('*', '*'))
             for file_name in glob(pattern):
                 os.remove(file_name)
-        torch.save(predictor.state_dict(), os.path.join(checkpoints_path, last_pattern.format(e, i)))
+        torch.save(predictor.state_dict(), os.path.join(checkpoints_path, last_pattern.format(e, global_step)))
 
         cur_val_loss = val_loss
         if cur_val_loss < best_val_loss:
             pattern = os.path.join(checkpoints_path, last_pattern.format('*', '*'))
             for file_name in glob(pattern):
                 os.remove(file_name)
-            torch.save(predictor.state_dict(), os.path.join(checkpoints_path, best_pattern.format(e, i)))
+            torch.save(predictor.state_dict(), os.path.join(checkpoints_path, best_pattern.format(e, global_step)))
             best_val_loss = cur_val_loss
         
         
@@ -426,6 +432,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '--gpu', type=str,
         help='which GPU to use'
+    )
+    parser.add_argument(
+        '--dropout', type=float,
+        help='dropout probability'
+    )
+    parser.add_argument(
+        '--lr', type=float,
+        help='learning rate'
     )
 
     parser.set_defaults(**default_params)
