@@ -92,7 +92,18 @@ def setup_results_dir(params):
 
     return results_path
 
-def load_last_checkpoint(checkpoints_path):
+def load_last_checkpoint(checkpoints_path, params):
+    if params['load_model'] is not None:
+        checkpoint_path = params['load_model']
+        checkpoint_name = os.path.basename(checkpoint_path)
+        match = re.match(
+            'best-ep{}-it{}'.format(r'(\d+)', r'(\d+)'),
+            checkpoint_name
+        )
+        epoch = int(match.group(1))
+        iteration = int(match.group(2))
+        return (torch.load(checkpoint_path), epoch, iteration)
+    
     checkpoints_pattern = os.path.join(
         checkpoints_path, 'ep{}-it{}'.format('*', '*')
     )
@@ -155,8 +166,8 @@ def generate_sample(generator, params, writer, global_step, results_path, e):
             
             if writer is not None:
                 writer.add_scalar('validation/sample average', np.mean(samples), global_step)
-                writer.add_scalar('validation/sample min', samples.max(), global_step)
-                writer.add_scalar('validation/sample max', samples.min(), global_step)
+                writer.add_scalar('validation/sample min', samples.min(), global_step)
+                writer.add_scalar('validation/sample max', samples.max(), global_step)
             
             start = time.time()
             for i in range(params['n_samples']):
@@ -209,7 +220,7 @@ def main(exp, frame_sizes, dataset, **params):
     criterion = sequence_nll_loss_bits
     
     checkpoints_path = os.path.join(results_path, 'checkpoints')
-    checkpoint_data = load_last_checkpoint(checkpoints_path)
+    checkpoint_data = load_last_checkpoint(checkpoints_path, params)
     if checkpoint_data is not None:
         (state_dict, epoch, iteration) = checkpoint_data
         start_epoch = int(epoch)
@@ -221,8 +232,8 @@ def main(exp, frame_sizes, dataset, **params):
         global_step = 0
     
     
-    writer = SummaryWriter("runs/{}-{}".format(params['dataset'], str(datetime.datetime.now()).split('.')[0].replace(' ', '-')))
-    
+    #writer = SummaryWriter("runs/{}-{}".format(params['dataset'], str(datetime.datetime.now()).split('.')[0].replace(' ', '-')))
+    writer = SummaryWriter(os.path.join(results_path, "{}-{}".format(params['dataset'], str(datetime.datetime.now()).split('.')[0].replace(' ', '-'))))
     dataset_train = data_loader(0, val_split, eval=False)
     dataset_val = data_loader(val_split, test_split, eval=True)
     dataset_test = data_loader(test_split, 1, eval=True)
@@ -440,6 +451,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '--lr', type=float,
         help='learning rate'
+    )
+    parser.add_argument(
+        '--load_model', required=False,
+        help='Load a certain model with this path'
     )
 
     parser.set_defaults(**default_params)
