@@ -1,0 +1,74 @@
+\documentclass[11pt,a4paper]{article} 
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+% Seitenlayout
+\usepackage[paper=a4paper,width=14cm,left=35mm,height=22cm]{geometry}
+\usepackage{setspace}
+\linespread{1.15}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0em} % im Deutschen Einrückung nicht üblich, leider
+
+\usepackage{graphicx}
+\usepackage{emptypage} % Wirklich leer bei leeren Seiten
+
+% Quellen teilen
+\usepackage{bibtopic} 
+
+%opening
+\title{\huge{Exposé} \\ \vspace{1.0cm} \large{Comparing raw audio generation algorithms on the task of music generation}}
+\author{Fabian Stahl}
+
+\begin{document}
+
+\maketitle
+
+
+% To-Do: Ansätze nennen, die ich machen will (mind 3)
+% Quellen hinzufügen
+% Midi based approaches
+% Raw Audio approaches
+% waveNet, Wavegan
+
+
+
+Deep neural networks have been known to solve a wide range problems.
+Often a models architecture is chosen based upon the topology of the input data.
+For example CNN-based networks perform especially good with image tasks, since the spatial structure of neighbouring pixels can be recognized. 
+LSTMs are often used for input streams of text since previous states are important for the output.
+
+In the field of audio generation there is a wide variety of approaches.
+Most of them work with MIDI data, a binary format specifying musical notes \cite{yang2017midinet, roberts2018hierarchical, tikhonov2017music, hennig2017classifying}.
+This makes the format very slim, however the musical interpretation, (the raw audio sent to the sound port), is up to an external MIDI synthesizer.
+
+When it comes to raw-audio synthesizes and moreover to music-generation using deep neural networks, there are only few approaches.
+Since most approaches have heavy downsides, there are no clear superior network architectures for this kind of data.
+For example, an already compressed 3 minute mp3 Song is about 3MB.
+Data of this size cannot be fed into most network architectures due to resource limitations.
+Microsoft's WaveNet architecture \cite{van2016wavenet} for example, an autoregressive model intended for speech synthesis, is known to produce very realistic sounds, but takes hours to produce a single second of audio.
+
+Another approach is to convert audio data to spectrogram images and use CNN-based networks intended for image data.
+Conversion back and forth can be done by using public tools such as ARSS \cite{arss}.
+However, converting spectrogram images back to audio data is known to be very lossy which results in poor audio quality, even if generated spectrogram images are realistic.
+
+
+My aim for this project is to make myself familiar with recent sample-based approaches, and - if possible - implement them.
+This may include 
+\begin{itemize}
+\item GAN-based architectures like WaveGAN / SpecGAN \cite{donahue2018adversarial} (produces about a second of audio data) or Google's GANSynth \cite{engel2019gansynth}(produces about 4 seconds of audio data).
+\item Music Auto-Encoders like \cite{colonel2017improving, sarroff2014musical} or \cite{roberts2017hierarchical}
+\item Fully convolutional audio synthesis using the ARSS conversion tool.
+\item More approaches from \cite{briot2017deep}
+\item ...
+\end{itemize}
+
+Finally I want to compare different approaches, and evaluate results concerning realism, synthesis speed, musical coherency and creativity.
+
+
+
+\bibliographystyle{plain} % Literaturverzeichnis
+\begin{btSect}{sources} % mit bibtopic Quellen trennen
+\section*{Sources}
+\btPrintCited
+\end{btSect}
+
+\end{document}

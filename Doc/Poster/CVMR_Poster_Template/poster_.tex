@@ -1,0 +1,280 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CVMR Poster Template based on:
+% Dreuw & Deselaer's Poster Version 1.0 (11/04/13)
+% http://www-i6.informatik.rwth-aachen.de/~dreuw/latexbeamerposter.php
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[final,hyperref={pdfpagelabels=false}]{beamer}
+\usepackage[orientation=portrait,size=a0,scale=1.4]{beamerposter} % Use the beamerposter package for laying out the poster with a portrait orientation and an a0 paper size
+
+\usetheme{cvmr}
+
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsthm,amssymb,latexsym} % For including math equations, theorems, symbols, etc
+\usepackage{enumitem,xcolor}
+\usepackage[scaled]{helvet}
+\usepackage[percent]{overpic}
+\usepackage{microtype}
+\setlength{\emergencystretch}{1em}
+\usepackage{booktabs} % Top and bottom rules for tables
+\usepackage{subfig}
+\usepackage[justification=justified]{caption}
+\usepackage{adjustbox}
+\usepackage[binary-units=true]{siunitx}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,calc,backgrounds,positioning,fit}
+\usepackage[acronym,xindy]{glossaries}
+\input{./glossaries}
+
+\newcommand{\blocktextwidth}{0.93\textwidth}
+
+% graphics path
+\graphicspath{{./figures/}}
+
+% input path
+\makeatletter
+\providecommand*{\input@path}{}
+\edef\input@path{{./figures/}\input@path}% prepend
+\makeatother
+
+%-------------------------------------------------------------------------------
+
+\newcommand{\icarus}{\textit{ICARUS}}
+
+%---TITLE-----------------------------------------------------------------------
+
+\title{
+A Low-Cost Mobile Infrastructure\\[0.5ex] for Compact Aerial Robots Under Supervision
+} % Poster title
+
+\author{%
+Marc Lieser \and Henning Tjaden \and Robert Brylka \and Lasse L{\"o}ffler \and Ulrich Schwanecke
+} % Author(s)
+
+\institute{%
+Computer Vision \& Mixed Reality Group, Hochschule RheinMain University of Applied Sciences, Wiesbaden
+} % Institution(s)
+
+%---FOOTER----------------------------------------------------------------------
+
+\newcommand{\leftfoot}{http://cvmr.mi.hs-rm.de/icarus} % Left footer text
+\newcommand{\rightfoot}{marc.lieser@hs-rm.de} % Right footer text
+
+%-------------------------------------------------------------------------------
+
+\begin{document}
+
+\begin{frame}[t] % The whole poster is enclosed in one beamer frame
+
+\begin{columns}[t] % The whole poster consists of three major columns, each of which can be subdivided further with another \begin{columns} block - the [t] argument aligns each column's content to the top
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%        LEFT  COLUMN        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{column}{.31\textwidth} % The first column
+
+%-------------------------------------------------------------------------------
+
+{
+\setbeamercolor{block title}{fg=myfg,bg=white} % Change the block title color
+\setbeamercolor{block body}{fg=myfg,bg=white} % Change the block title color
+
+%---INTRODUCTION----------------------------------------------------------------
+
+\vspace{1.11em}
+
+\begin{block}{Introduction}
+\begin{minipage}[]{\blocktextwidth}
+The availability of affordable \glspl{mav} opens up a whole new field of civil applications.
+We present an \emph{Infrastructure for Compact Aerial Robots Under Supervision} (\icarus{})~\cite{lieser2017} that realizes a scalable low-cost testbed for research in the area of \glspl{mav} starting at about \$100.
+It combines hardware and software for tracking and computer-based control of multiple quadrotors.
+In combination with the usage of lightweight miniature off-the-shelf quadrotors our system provides a testbed that virtually can be used anywhere without the need of elaborate safety measures.
+We give an overview of the entire system, provide some implementation details as well as an evaluation and depict different applications based on our infrastructure such as an \gls{ugv} which in cooperation with a \gls{mav} can be utilized in \gls{sar} operations
+and a multi-user interaction scenario with several \glspl{mav}.
+\end{minipage}
+\end{block}
+}
+
+%---COMPONENTS------------------------------------------------------------------
+            
+\begin{block}{Components}
+\begin{minipage}[]{\blocktextwidth}
+Our low-cost quadrotor testbed consists of miniature off-the-shelf quadrotors, multiple radio remote controls and an infrared-based monocular tracking system~\cite{tjaden2014}.
+It consequently utilizes low-cost off-the-shelf hardware and thus a minimum setup can be realized for under \$100 on a single-board computer.
+\end{minipage}
+\end{block}
+
+%---ARCHITECTURE----------------------------------------------------------------
+
+\begin{block}{Software Architecture}
+\begin{minipage}[]{\blocktextwidth}
+High modularity and platform independency gain the scalability and flexibility required by our infrastructure. 
+A publish-subscribe messaging pattern ensures loose coupling and a dynamic network topology which allows the use of a dedicated tracking computer and to control the infrastructure using a mobile phone.
+\end{minipage}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.9\columnwidth}{!}{\input{software_architecture}}
+\end{figure}
+
+\end{block}
+
+\vspace{-0.7em}
+
+%---REFERENCES------------------------------------------------------------------
+
+{
+\setbeamercolor{block title}{fg=myfg,bg=white} % Change the block title color
+\setbeamercolor{block body}{fg=myfg,bg=white} % Change the block title color
+
+\begin{block}{References}
+\vspace{-.5\baselineskip}
+\bibliographystyle{unsrt}
+\scriptsize{\bibliography{./literatur}}
+\end{block}
+}
+
+%-------------------------------------------------------------------------------
+
+\end{column} % End of the first column
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%           SPANNED MIDDLE AND RIGHT COLUM           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{column}{0.6375\textwidth} % The second column
+
+\begin{figure}
+\centering
+\input{architecture_overpic.tex}
+\caption*{%
+Overview of \icarus{}: After pose estimation of the individual quadrotors based on optical tracking the control variables are determined and sent via different radio remote control devices to the individual quadrotors.
+}
+\end{figure}
+
+\vspace{-0.55em}
+
+\begin{columns}[T]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%        MIDDLE  COLUMN        %%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{column}{0.486\textwidth}
+
+%---EVALUATION------------------------------------------------------------------
+
+\begin{block}{Evaluation}
+\begin{minipage}[]{\blocktextwidth}
+In the \textbf{skywriting} experiment, a quadrotor followed the trajectory of the letters CVMR with a total width of \SI{1000}{\milli\meter} and a height of \SI{292}{\milli\meter} using a hover controller.
+The baseline of the lettering was at a height of \SI{1000}{\milli\meter}.
+The \gls{rmse} of this experiment is \SI{22.2}{\milli\meter}.
+\end{minipage}
+
+\vspace{0.8em}
+
+\begin{figure}
+\centering\tiny
+\adjustbox{width=0.9\columnwidth,trim=0em 1em 3em 2em}{\input{cvmr}}
+\end{figure}
+
+\vspace{1em}
+
+\begin{minipage}[]{\blocktextwidth}
+A flight in which the quadrotor was instructed to \textbf{hover} at the target height of \SI{1300}{\milli\meter} for \SI{60}{\second} was carried out in a single camera environment.
+The \gls{rmse} of this experiment is \SI{7.6}{\milli\meter}, the mean and standard deviations are $\bar{\mathbf{t}} = (0.6\pm4.4, -0.2\pm5.9, -2.3\pm4.1)$, and the maximum deviations are $\mathbf{d}_{\textnormal{max}} = (12.6, 18.3, 20.8)$.
+\end{minipage}
+
+\vspace{0.1em}
+
+\begin{figure}
+\centering\tiny
+\adjustbox{width=0.85\columnwidth,trim=-1em 2em 0em 1em}{\input{hover}}
+\end{figure}
+
+\end{block}
+
+%-------------------------------------------------------------------------------
+
+\end{column}
+
+\hfill
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%      RIGHT  COLUMN      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{column}{0.486\textwidth}
+
+%---APPLICATIONS----------------------------------------------------------------
+
+\begin{block}{Applications}
+\begin{minipage}[]{\blocktextwidth}
+As proof of concept we realized different applications based on \icarus{}:
+\textbf{Light paintings} created by the quadrotors' trajectories;
+expanding the limited field of view of \glspl{ugv} with a quadrotor for the use in \textbf{\gls{sar}} applications;
+experimental tactile and gesture-based \textbf{human-quadrotor interaction} scenarios.
+\end{minipage}
+\end{block}
+
+\begin{figure}
+\shortstack{%
+\includegraphics[height=92mm]{lp_cvmr.jpg}\\[2mm]
+\includegraphics[height=92mm]{lp_circles.jpg}
+}
+\hfill
+\includegraphics[height=187mm]{figures/flyper.jpg}
+\caption*{Light paintings of quadrotor evaluation trajectories (left). A \gls{mav} controlled by an experimental \gls{ugv} (right).}
+\end{figure}
+
+%---FUTURE-WORK-----------------------------------------------------------------
+
+\vspace{-0.8em}
+
+\begin{block}{Future Work}
+\begin{minipage}[]{\blocktextwidth}
+\begin{itemize}[leftmargin=*,labelindent=0pt,label={\color{black!40}$\bullet$}]
+\item{Escape the limited indoor environment utilizing visual SLAM algorithms}
+\item{Solve model predictive control (MPC) quadratic problems to generate and track feasible smooth trajectories}
+\item{Explore new (tactile) human-quadrotor interaction methods}
+\item{Open source parts of our implementation}
+\item{Integrate Arduino-based RC approaches and quadrotor simulation into ROS}
+\end{itemize}
+\end{minipage}
+\end{block}
+
+%-------------------------------------------------------------------------------
+
+\end{column}
+\end{columns}
+
+%-------------------------------------------------------------------------------
+
+\end{column} % End of the second column
+\end{columns} % End of all the columns in the poster
+
+%-------------------------------------------------------------------------------
+
+\begin{figure}[htp]
+\centering
+\begin{minipage}[t]{\columnwidth}{\footnotesize
+\begin{overpic}[width=.1\columnwidth]{mimic/series_0000_initial.jpg} {\put (72,9) {1}}\end{overpic}%
+\begin{overpic}[width=.1\columnwidth]{mimic/series_0001_select.jpg}  {\put (72,9) {2}}\end{overpic}%
+\begin{overpic}[width=.1\columnwidth]{mimic/series_0002_takeoff.jpg} {\put (72,9) {3}}\end{overpic}%
+\begin{overpic}[width=.1\columnwidth]{mimic/series_0003_hover_1.jpg} {\put (72,9) {4}}\end{overpic}%
+\begin{overpic}[width=.1\columnwidth]{mimic/series_0004_hover_2.jpg} {\put (72,9) {5}}\end{overpic}%
+\begin{overpic}[width=.1\columnwidth]{mimic/series_0005_hover_3.jpg} {\put (72,9) {6}}\end{overpic}%
+\begin{overpic}[width=.1\columnwidth]{mimic/series_0006_hover_4.jpg} {\put (72,9) {7}}\end{overpic}%
+\begin{overpic}[width=.1\columnwidth]{mimic/series_0007_unselect.jpg}{\put (72,9) {8}}\end{overpic}%
+\begin{overpic}[width=.1\columnwidth]{mimic/series_0008_land.jpg}    {\put (72,9) {9}}\end{overpic}%
+\begin{overpic}[width=.1\columnwidth]{mimic/series_0009_final.jpg}   {\put (72,9) {10}}\end{overpic}}%
+\end{minipage}
+\caption*{Gesture-based interaction: A user selects a quadrotor by pointing at it with the right arm~(2). Lifting the left arm instructs the quadrotor to take off~(3). While the left arm is up, the quadrotor imitates the motion of the user's right hand~(4--7). When lowering the left arm, the quadrotor may be selected by another user~(8). Bringing both hands together~(9) lets the quadrotor land~(10).}
+\end{figure}
+
+%-------------------------------------------------------------------------------
+
+\end{frame} % End of the enclosing frame
+
+\end{document}
