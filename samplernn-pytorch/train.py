@@ -93,7 +93,7 @@ def setup_results_dir(params):
     return results_path
 
 def load_last_checkpoint(checkpoints_path, params):
-    if params['load_model'] is not None:
+    if 'load_model' in params:
         checkpoint_path = params['load_model']
         checkpoint_name = os.path.basename(checkpoint_path)
         match = re.match(
