@@ -49,7 +49,7 @@ Fabian Stahl
 } % Author(s)
 
 \institute{%
-Hochschule RheinMain University of Applied Sciences, Wiesbaden
+Computer Vision \& Mixed Reality Group, Hochschule RheinMain University of Applied Sciences, Wiesbaden
 } % Institution(s)
 
 %---FOOTER----------------------------------------------------------------------
@@ -79,7 +79,7 @@ Hochschule RheinMain University of Applied Sciences, Wiesbaden
 
 %---INTRODUCTION----------------------------------------------------------------
 
-\vspace{1.11em}
+\vspace{0.9em}
 
 \begin{block}{Introduction}
 \begin{minipage}[]{\blocktextwidth}
@@ -98,7 +98,7 @@ Some of the most promising candidates can be found in~\cite{deepsound}.
 \end{block}
 }
 
-\vspace{2em}
+\vspace{1.655em}
 
 %---Related Work------------------------------------------------------------------
             
@@ -109,7 +109,7 @@ For example, it was found, that deep neural networks perform excellent in the te
 However, when it comes to music synthesis, these architectures seem to lack the ability to capture long term time structures which results, if not in noise, in rapidly changing motives.
 
 Most approaches to generate music use MIDI data, a binary format specifying musical notes~\cite{yang2017midinet, mogren2016c, tikhonov2017music, hennig2017classifying}.
-This symbolic representation makes the format very slim, however the musical interpretation, (the raw audio sent to the sound port), is up to an external MIDI synthesizer.
+This symbolic representation makes the format very slim, however the musical interpretation (the raw audio sent to the sound port) is up to an external MIDI synthesizer.
 
 Only few sample based approaches to generate music are known, that generate pleasing results.
 The most promising candidates are presented in the following.
@@ -124,8 +124,8 @@ The most promising candidates are presented in the following.
 
 \begin{block}{CNN-based Approach}
 \begin{minipage}[]{\blocktextwidth}
-Convolutional Neural Networks (CNNs) are very popular in the field of computer vision because they preserve the spatial structure of input data.
-They are rather uncommon when it comes to sequential data.
+Convolutional Neural Networks (CNNs) are very popular in the field of computer vision because they take into account the spatial structure of input data.
+But they are rather uncommon when it comes to sequential data.
 
 However, in 2016 a Microsoft research team presented State-of-the-Art TTS results using a fully convolutional neural network, called \textbf{WaveNet}~\cite{van2016wavenet}.
 Dilated convolutions were used to increase the field of perception (see Figure below).
@@ -158,6 +158,8 @@ Unfortunately choosing the right hyperparameters for training is quite difficult
     \caption*{image source: \url{https://www.electronicbeats.net/app/uploads/2018/03/robotdj_spotify.jpg}}
 \end{figure}
 
+\vspace{-1em}
+
 \begin{columns}[T]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,7 +177,7 @@ Output data is not only based upon input data, but also on a hidden state vector
 
 A promising candidate for music generation is the \textbf{SampleRNN}~\cite{mehri2016samplernn} (see Figure below).
 Stacked \emph{Frame-Level Modules} with different fields of perception are used to capture temporal context over different time periods (tier 2 and 3).
-A \emph{Sample-Level Module} puts their state vector as well as the current input sample into consideration to generate a probability distribution for the next sample (tier 1).
+A \emph{Sample-Level Module} puts their state vector into consideration as well as the current input sample to generate a probability distribution for the next sample (tier 1).
 Originally tested only for piano music, \cite{zukowski2018generating} and \cite{carr2018generating} showed, that SampleRNN is especially good to generate loud music genres, like Metal and Dark Ambient.
 Its biggest drawback is, that sample quality varies strongly even after days of training.
 \begin{figure}[ht]
@@ -230,6 +232,20 @@ However, all of these approaches only work on fixed length audio input and outpu
 \begin{column}{0.486\textwidth}
 
 
+%---Progress-----------------------------------------------------------------
+
+
+\begin{block}{Progress}
+\begin{minipage}[]{\blocktextwidth}
+\begin{itemize}[leftmargin=*,labelindent=0pt,label={\color{black!40}$\bullet$}]
+\item{Implementation and training of WaveGAN}
+\item{Update and Training of an outdated \mbox{SampleRNN} implementation}
+\end{itemize}
+\end{minipage}
+\end{block}
+
+\vspace{-1em}
+
 %---FUTURE-WORK-----------------------------------------------------------------
 
 
@@ -238,7 +254,6 @@ However, all of these approaches only work on fixed length audio input and outpu
 \begin{itemize}[leftmargin=*,labelindent=0pt,label={\color{black!40}$\bullet$}]
 \item{Implement and train more architectures}
 \item{Directly compare generated music from different networks that were trained on the same dataset}
-\item{Human evaluation}
 \end{itemize}
 \end{minipage}
 \end{block}
@@ -250,7 +265,7 @@ However, all of these approaches only work on fixed length audio input and outpu
 
 %---REFERENCES------------------------------------------------------------------
 
-\vspace{1em}
+\vspace{-1em}
 {
 \setbeamercolor{block title}{fg=myfg,bg=white} % Change the block title color
 \setbeamercolor{block body}{fg=myfg,bg=white} % Change the block title color
