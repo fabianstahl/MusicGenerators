@@ -1,13 +1,14 @@
 #!/bin/sh
 
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <youtube url> <chunk size in seconds> <dataset path>"
+if [ "$#" -ne 4 ]; then
+    echo "Usage: $0 <youtube url> <chunk size in seconds> <dataset path> <sample rate>"
     exit
 fi
 
 url=$1
 chunk_size=$2
 dataset_path=$3
+sample_rate=$4
 
 downloaded=".temp"
 rm -f $downloaded
@@ -16,7 +17,7 @@ youtube-dl $url -f $format -o $downloaded
 
 converted=".temp2.wav"
 rm -f $converted
-ffmpeg -i $downloaded -ac 1 -ab 16k -ar 16000 $converted
+ffmpeg -i $downloaded -ac 1 -ab 16k -ar $sample_rate $converted
 rm -f $downloaded
 
 mkdir $dataset_path

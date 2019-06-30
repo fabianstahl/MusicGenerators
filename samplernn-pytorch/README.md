@@ -12,11 +12,11 @@ This code requires Python 3.7 and PyTorch 1.1.10. Installation instructions for 
 
 ## Datasets
 
-We provide a script for creating datasets from YouTube single-video mixes. It downloads a mix, converts it to wav and splits it into equal-length chunks. To run it you need youtube-dl (a recent version; the latest version from pip should be okay) and ffmpeg. To create an example dataset - 4 hours of piano music split into 8 second chunks, run:
+We provide a script for creating datasets from YouTube single-video mixes. It downloads a mix, converts it to wav and splits it into equal-length chunks. To run it you need youtube-dl (a recent version; the latest version from pip should be okay) and ffmpeg. To create an example dataset - 4 hours of piano music split into 8 second chunks with a sample rate of 16000, run:
 
 ```
 cd datasets
-./download-from-youtube.sh "https://www.youtube.com/watch?v=EhO_MrRfftU" 8 piano
+./download-from-youtube.sh "https://www.youtube.com/watch?v=EhO_MrRfftU" 8 piano 16000
 ```
 
 You can also prepare a dataset yourself. It should be a directory in `datasets/` filled with equal-length wav files. Or you can create your own dataset format by subclassing `torch.utils.data.Dataset`. It's easy, take a look at `dataset.FolderDataset` in this repo for an example.
@@ -28,6 +28,12 @@ To train the model you need to run `train.py`. All model hyperparameters are set
 ```
 python train.py --exp TEST --frame_sizes 16 4 --n_rnn 2 --dataset piano
 ```
+
+I recommend using the options
+```
+--dropout 0.5 
+```
+
 
 The results - training log, loss plots, model checkpoints and generated samples will be saved in `results/`.
 
