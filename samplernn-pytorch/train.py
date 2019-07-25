@@ -54,7 +54,7 @@ default_params = {
 
 tag_params = [
     'exp', 'frame_sizes', 'n_rnn', 'dim', 'learn_h0', 'q_levels', 'seq_len',
-    'batch_size', 'dataset', 'val_frac', 'test_frac', 'dropout', 'lr'
+    'batch_size', 'dataset', 'val_frac', 'test_frac', 'dropout', 'lr', 'sample_rate'
 ]
 
 def param_to_string(value):
@@ -94,6 +94,7 @@ def setup_results_dir(params):
 
 def load_last_checkpoint(checkpoints_path, params):
     if 'load_model' in params:
+        """
         checkpoint_path = params['load_model']
         checkpoint_name = os.path.basename(checkpoint_path)
         match = re.match(
@@ -103,7 +104,19 @@ def load_last_checkpoint(checkpoints_path, params):
         epoch = int(match.group(1))
         iteration = int(match.group(2))
         return (torch.load(checkpoint_path), epoch, iteration)
-    
+        """
+        checkpoint_path = params['load_model']
+        checkpoint_name = os.path.basename(checkpoint_path)
+        match = re.match(
+            'best-ep{}-it{}'.format(r'(\d+)', r'(\d+)'),
+            checkpoint_name
+        )
+        epoch = int(match.group(1))
+        iteration = int(match.group(2))
+        
+        print("\n", checkpoint_path, epoch, iteration, "\n")
+        return (torch.load(checkpoint_path), epoch, iteration)
+        
     checkpoints_pattern = os.path.join(
         checkpoints_path, 'ep{}-it{}'.format('*', '*')
     )

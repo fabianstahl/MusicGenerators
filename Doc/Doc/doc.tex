@@ -1,0 +1,112 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+
+
+\begin{document}
+
+\setlength\parindent{0pt}
+\title{Raw Audio Music Generation Using Deep Neural Networks}
+\author{Fabian Stahl}
+
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+\section*{Abbreviations}
+\begin{center}
+\begin{tabular}{l l}
+\textbf{CNN} & Convolutional neural network \\
+\textbf{GAN} & Generative adversarial network \\
+\textbf{GRU} & Gated Recurrent Unit \\
+\textbf{LSTM} & Long short-term memory \\
+\textbf{MIDI} & Musical Instrument Digital Interface \\
+\textbf{MLP} & Multilayer Perceptrons \\
+\textbf{RNN} & Recurrent neural network \\
+\textbf{VAE} & Variational autoencoder \\
+\end{tabular}
+\end{center}
+\newpage
+
+
+\begin{abstract}
+Music can be found in almost every movie, video game or public location.
+Its targeted use can change people's mood, encourage buying decisions or add context to accompanying content.
+However, composing, recording and mixing music is a creative process, that takes a lot of time and skill to master.
+This poses the question, if pleasing music can be generated autonomously.
+
+Deep neural networks have been known to solve a wide range problems.
+During this semester's project I will compare different network architectures to generate sample based music, show how they can be trained and rate results.
+\end{abstract}
+
+\section{Related Work}
+% midi
+In the field of audio generation there is a wide variety of approaches.
+Most of them work with symbolic music representations, such as Ascii-text, musical scores or spectrogram data.
+Especially the MIDI format is commonly used, a binary format specifying musical notes.
+This makes the format very slim and easy to work with.
+MIDI-based approaches include e.g. GANs with convolutions layers ~\cite{yang2017midinet, mogren2016c, mogren2016c}, VAEs paired with LSTMs~\cite{roberts2018hierarchical, tikhonov2017music, hennig2017classifying} and RNNs with restricted Boltzmann machines \cite{boulanger2012modeling}.
+However, musical nuances like tonal colors, scratch and breath noises or intonations are necessary to make most music genres more interesting.
+Having MIDI output only, the musical interpretation, (the raw audio sent to the sound port), is up to an external MIDI synthesizer.
+
+There are commercial music streaming services that claim to provide generated music that fits the customer's mood.
+The most prominent of them beeing brain.fm~\cite{brain.fm} and \cite{Mubert}.
+However, the brain.fm algorithm only learns certain tasks, such as arrangin motifs over long timescales, while melodies, instrument choices and chord progressions are precomposed by humans.
+Mubert also uses handcrafted single instrument MIDI loops, but generates some MIDI layers using decision trees, random forests and musical analysis.
+Their music is limited to electronic genres only, which narrows musical variety.
+While these application developers like to emphasise the machine learning aspect, their algorithms are not fully autonomous.
+The two biggest reasons for that could be the high complexity of generating music sample by sample, especially with real time constraints, as well as the ineptitude of the synthesized music for commercial use.
+
+
+
+\section{Competing Models}
+\subsection{SampleRNN}
+Recurrent Neural Networks (RNNs) are used to process sequences of data.
+Output data is not only based upon input data, but also on a hidden state vector, that encodes previous input.
+RNNs consist of arrays of small memory units.
+While the original \emph{vanilla cells} were prone to the vanishing gradient problem, more advanced structures like LSTMs and GRUs could learn to keep important information and forget redundant or irrelevant previous input.
+Common RNNs don't scale very good with the high temporal resolution, which is required for sound output.
+Corralation can exist between neighbouring samples as well as between samples that are more than thousand frames apart.
+
+Mehri et al. adresses this issue by using multiple stacked RNNs with different temporal resolutions (see \ref{fig::samplernn} for an example model).
+Their so called \textbf{SampleRNN}~\cite{mehri2016samplernn} is a promising candidate for music generation.
+Stacked \emph{Frame-Level Modules} with different fields of perception are used to capture temporal context over different time periods.
+State vectors are passed to the next lower module.
+A \emph{Sample-Level Module} puts their state vector into consideration as well as the current input sample to generate a probability distribution for the next sample.
+Originally tested only for piano music, \cite{zukowski2018generating} and \cite{carr2018generating} showed, that SampleRNN is especially good to generate loud music genres, like Metal and Dark Ambient.
+Its biggest drawback is, that sample quality varies strongly even after days of training.
+
+
+
+
+\subsubsection{Architecture}
+\begin{figure}[ht]
+    \label{fig:samplernn}
+    \includegraphics[width=\textwidth]{img/samplernn.png}
+    \caption{The SampleRNN consist of multiple Frame-Level Modules, two in this example, and a Sample-Level Module (tier 1). Here, tier 3 has a field of perception of 15 samples, whereas tier 2 uses 3 samples each step and needs to be called more frequently. The state vector $c$ of tier 3 is passed to tier 2 and combined with its state vector $h$. Tier 1 takes the product of $c$ and the sample input and feeds it trough a MLP to determine a probability distribution to draw the next sample. Note that this example is simplified. }
+\end{figure}
+
+\subsubsection{Experiments}
+
+\subsection{WaveNET}
+\subsubsection{Architecture}
+\subsubsection{Training}
+
+\subsection{???}
+\subsubsection{Architecture}
+\subsubsection{Training}
+
+\section{Evaluation}
+\subsection{Challenges}
+\subsection{Performance}
+\subsection{Comparison to Real Music}
+\subsection{Human Evaluation}
+
+\section{Discussion and future work}
+
+
+
+
+
+\end{document}
