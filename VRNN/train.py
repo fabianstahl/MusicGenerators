@@ -96,7 +96,7 @@ def train(epoch, writer):
         writer.add_scalar('train/Overall loss', loss, global_step)
 
         #grad norm clipping, only in pytorch version >= 1.10
-        nn.utils.clip_grad_norm(model.parameters(), clip)
+        nn.utils.clip_grad_norm_(model.parameters(), clip)
         
         #printing
         if batch_idx % print_every == 0:
@@ -111,6 +111,7 @@ def train(epoch, writer):
             samples = samples.flatten().cpu().float().numpy()
             
             norm_samples = ((samples[:] - samples[:].min()) / (0.00001 + (samples[:].max() - samples[:].min()))) * 1.9 - 0.95
+
             writer.add_audio('test/sound{}'.format(global_step), norm_samples, global_step, sample_rate=16000)
             
             write_wav(os.path.join(results_path, dataset_name, "sample-{}.wav".format(batch_idx)), samples, sr=16000, norm=True)

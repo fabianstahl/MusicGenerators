@@ -92,13 +92,8 @@ class VRNN(nn.Module):
             nn.Linear(h_dim, self.num_k * x_dim),
             nn.Softplus())
         #self.dec_mean = nn.Linear(h_dim, x_dim)
-        self.dec_mean = nn.Sequential(
-            nn.Linear(h_dim, self.num_k * x_dim),
-            nn.Sigmoid())
+        self.dec_mean = nn.Linear(h_dim, self.num_k * x_dim)
 
-        self.coeff = nn.Sequential(
-            nn.Linear(h_dim, self.num_k),
-            nn.Softmax())
 
         #recurrence
         self.rnn = nn.GRU(h_dim + h_dim, h_dim, n_layers, bias) #(input_size, hidden_size, n_layers, bias)
@@ -130,7 +125,7 @@ class VRNN(nn.Module):
             # Random Sampling 
             z_t = self._reparameterized_sample(enc_mean_t, enc_std_t)
             
-            # Reparameterization trick (Equation 6 in Paper)
+            # Encode the sampled z (Equation 6 in Paper)
             phi_z_t = self.phi_z(z_t)
 
             # Decoder (Equation 6 in Paper)
@@ -138,17 +133,16 @@ class VRNN(nn.Module):
             dec_mean_t = self.dec_mean(dec_t)
             dec_std_t = self.dec_std(dec_t)
 
-            coeff = self.coeff(dec_t)
 
             # Recurrence / Update hidden state (Equation 7 in paper)
             _, h = self.rnn(torch.cat([phi_x_t, phi_z_t], 1).unsqueeze(0), h) # not sure, before just h
 
             #computing losses
             kld_loss += self._kld_gauss(enc_mean_t, enc_std_t, prior_mean_t, prior_std_t)
-            #nll_loss += self._nll_gauss(dec_mean_t, dec_std_t, x[t])
-
+            nll_loss += self._nll_gauss(dec_mean_t, dec_std_t, x[t])
             
-            nll_loss += self._nll_bernoulli(dec_mean_t, x[t])
+            
+            #nll_loss += self._nll_bernoulli(dec_mean_t, x[t])
             
             #x_in = x.reshape((x.shape[0]*x.shape[1],-1))
             
@@ -219,7 +213,7 @@ class VRNN(nn.Module):
         kld_element =  (2 * torch.log(std_2) - 2 * torch.log(std_1) + 
             (std_1.pow(2) + (mean_1 - mean_2).pow(2)) /
             std_2.pow(2) - 1)
-        return	0.5 * torch.sum(kld_element)
+        return	0.5 * torch.sum(kld_element, dim=-1).mean()
 
 
     def _nll_bernoulli(self, theta, x):
@@ -243,8 +237,8 @@ class VRNN(nn.Module):
         
         print(y.shape, mu.shape, sig.shape, coeff.shape)
         
-        #inner = -0.5 * T.sum(T.sqr(y - mu) / sig**2 + 2 * T.log(sig) + T.log(2 * np.pi), axis=1)
-        inner = -0.5 * np.sum(((y-mu)**2) / sig**2 + 2 * np.log(sig) + np.log(2*np.pi), axis=1)
+        #inner = 0.5 * T.sum(T.sqr(y - mu) / sig**2 + 2 * T.log(sig) + T.log(2 * np.pi), axis=1)
+        #inner = -0.5 * np.sum(((y-mu)**2) / sig**2 + 2 * np.log(sig) + np.log(2*np.pi), axis=1)
         
         #a = T.log(coeff) + inner
         a = np.log(coeff) + inner
@@ -262,4 +256,7 @@ class VRNN(nn.Module):
 
 
     def _nll_gauss(self, mean, std, x):
-        pass
+
+        nll = 0.5 * torch.sum((x-mean).pow(2) / (std**2) + 2 * torch.log(std) + np.log(2*np.pi), dim=-1).mean()
+        
+        return nll
