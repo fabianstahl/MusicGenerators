@@ -20,11 +20,13 @@
 \textbf{CNN} & Convolutional neural network \\
 \textbf{GAN} & Generative adversarial network \\
 \textbf{GRU} & Gated Recurrent Unit \\
+\textbf{KLD}  & Kullback–Leibler divergence\\
 \textbf{LSTM} & Long short-term memory \\
 \textbf{MIDI} & Musical Instrument Digital Interface \\
 \textbf{MLP} & Multilayer Perceptrons \\
 \textbf{RNN} & Recurrent neural network \\
 \textbf{VAE} & Variational autoencoder \\
+\textbf{VRNN} & Variational Recurrent neural network \\
 \end{tabular}
 \end{center}
 \newpage
@@ -89,7 +91,85 @@ Its biggest drawback is, that sample quality varies strongly even after days of 
 
 \subsubsection{Experiments}
 
-\subsection{WaveNET}
+\subsection{VRNN}
+
+ % Paper
+\cite{VRNNgit} % Implementation
+
+% Idee (Markov, variational autoencoder erklären)
+
+Another approach to generate sound data is the Variational Recurrent Neural Network (VRNN), proposed 2016 by Chung et al.~\cite{chung2015recurrent}.
+The architecture was trained on the tasks of handwriting and sound generation.
+However, experiments for the ladder only include training with speech datasets and non-linguistic human-made sounds like coughing and screaming.
+This poses the question if the VRNN can be used to generate music as well.
+
+Chung et al. states, that there is an issue in the way that RNNs model output variety, since the only source of true randomness is drawing values from an output probability density.
+Data that is both highly variable and highly structered can be hard to model this way.
+On the one hand small input variations should lead to potentially very large variations in the hidden state vector $h_t$, on the other hand, different high level structures need to be mapped to distinct state vectors as well.
+This forces the network to compromise the encoding of low-level and high-level features.
+The main idea of the VRNN is to extend a recurrent neural network with latent random variables, therefore improving the representational power of the model.
+Such high-level variables are commonly used in VAEs to model multimodal conditional distributions, approximating real world data variety~\cite{kingma2013auto}.
+% <Satz zu VAEs>
+Chung et al. proposes to extend the VEA model by inducing temporal dependencies using the hidden state vector of a RNN across neighboring timesteps.
+
+
+
+
+% Architektur erklären (Diagramme, Fehlerfunktionen, Trainingsdiagramme)
+
+
+
+% Describe p, q, ...
+
+conditional prior / generative model - p(x | z)
+
+variational approximation 
+approximate posterior / inference model - p(z | x)
+prior over latent random variables - p(z)
+
+
+
+The model can be trained by minimizing the Kullback–Leibler divergence (KLD) - first term - and maximizing the likelihood of an $x$ given a $z$ - second term).
+This can be seen as adding a regulizer to a simple auto encoder to ensure that the generated distributions have a certain form.
+$$
+E_{\mathbf{z} \le T | \mathbf{x} \le T} = \left[ \sum_{t=1}^T -(KL(q(\mathbf{z}_t | \mathbf{x}_{\le t}, \mathbf{z}_{<t}) || p(\mathbf{z}_t | \mathbf{x}_{<t}, \mathbf{z}_{<t})) + log(p(\mathbf{x}_t | \mathbf{z}_{\le t, \mathbf{x}_{<t}}))) \right]
+$$
+
+The KLD between the two distributions $Q$ and $P$ with respect to $Q$ can be seen as a measurment of similarity between two distributions \cite{}.
+Since the probabilistic Encoder $q(z|x)$ is used to approximate the hard to compute posterior $p(x|z)$, $Q$ needs to be as similar to $P$ as possible.
+This means that the KL divergence needs to be minimized, which is identical to maximizing the lower variational bound~\cite{kingma2013auto}.
+%The KLD is defined as:
+%$$
+%KL(q || p) = -\sum p(x) log(\frac{p(x)}{q(x)})  
+%$$
+
+The second term of the error function describes the reconstruction error.
+%$$
+%log p(\mathbf{x}_t | \mathbf{z}_{\le t, \mathbf{x}_{<t}})
+%$$
+
+In theory the model can be trained using any probability distribution.
+The original paper uses gaussian distributions, leading to
+$$
+KL(q(\mathbf{z}_t | \mathbf{x}_{\le t}, \mathbf{z}_{<t}) || p(\mathbf{z}_t | \mathbf{x}_{<t}, \mathbf{z}_{<t}))
+= \sum \frac{log(\sigma_2)}{log(\sigma_1)}+\frac{\sigma_1^2 + (\mu_1 - \mu_2)}{2 \sigma_2^2} - \frac{1}{2}
+$$
+for term 1, where $\mu_1$ and $\mu_2$ are mean values and $\sigma_1$ and $\sigma_2$ are are the standard deviations of the two distributions $p$ and $q$ (see \cite{klproof} for a proof ), and
+$$
+log(p(\mathbf{x}_t | \mathbf{z}_{\le t, \mathbf{x}_{<t}}))
+= \sum \frac{\sqrt{y-\mu}}{2 \sigma^2} + log(\sigma) + \frac{log(2\pi)}{2}
+$$
+describes the second term, where %To_do!
+
+
+% Implementierungsdetaills
+Since the original source code was using the Theano ML library, I cloned a public PyTorch implementation~\cite{VRNNgit}.
+However, I found out, that I needed to make quite many adaptions to fit the original version.
+The biggest changes include a new data loader class, adding the correct error function, using more dense layers in all components and make the code more GPU-friendly.
+
+
+% Results
+
 \subsubsection{Architecture}
 \subsubsection{Training}
 

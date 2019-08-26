@@ -171,18 +171,6 @@ if __name__ == "__main__":
     torch.manual_seed(seed)
     plt.ion()
 
-    #init model + optimizer + datasets
-    """
-    train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('data', train=True, download=True,
-            transform=transforms.ToTensor()),
-        batch_size=batch_size, shuffle=True)
-
-    test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('data', train=False, 
-            transform=transforms.ToTensor()),
-        batch_size=batch_size, shuffle=True)
-    """
     
     data_loader = make_data_loader(batch_size,
                                     x_dim, dataset_root, dataset_name)
@@ -191,7 +179,7 @@ if __name__ == "__main__":
     
     writer = SummaryWriter(os.path.join(results_path, dataset_name))
     
-    model = VRNN(x_dim, h_dim, z_dim, n_layers, num_k).to(device)
+    model = VRNN(x_dim, h_dim, z_dim, n_layers, num_k, device).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     for epoch in range(1, n_epochs + 1):

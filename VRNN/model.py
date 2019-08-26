@@ -17,7 +17,7 @@ inference, prior, and generating models."""
 
 
 class VRNN(nn.Module):
-    def __init__(self, x_dim, h_dim, z_dim, n_layers, num_k, bias=False):
+    def __init__(self, x_dim, h_dim, z_dim, n_layers, num_k, device, bias=False):
         super(VRNN, self).__init__()
 
         self.x_dim = x_dim
@@ -25,6 +25,7 @@ class VRNN(nn.Module):
         self.z_dim = z_dim
         self.n_layers = n_layers
         self.num_k = num_k
+        self.device = device
 
         #feature-extracting transformations
         self.phi_x = nn.Sequential(
@@ -106,7 +107,7 @@ class VRNN(nn.Module):
         kld_loss = 0
         nll_loss = 0
 
-        h = Variable(torch.zeros(self.n_layers, x.size(1), self.h_dim)).to("cuda")
+        h = Variable(torch.zeros(self.n_layers, x.size(1), self.h_dim)).to(self.device)
         
         for t in range(x.size(0)):
             
@@ -162,7 +163,7 @@ class VRNN(nn.Module):
 
         sample = torch.zeros(seq_len, self.x_dim)
 
-        h = Variable(torch.zeros(self.n_layers, 1, self.h_dim)).to("cuda")
+        h = Variable(torch.zeros(self.n_layers, 1, self.h_dim)).to(self.device)
         for t in range(seq_len):
 
             #prior
@@ -203,17 +204,22 @@ class VRNN(nn.Module):
     def _reparameterized_sample(self, mean, std):
         """using std to sample"""
         eps = torch.FloatTensor(std.size()).normal_()
-        eps = Variable(eps).to("cuda")
+        eps = Variable(eps).to(device)
         return eps.mul(std).add_(mean)
 
 
     def _kld_gauss(self, mean_1, std_1, mean_2, std_2):
         """Using std to compute KLD"""
 
-        kld_element =  (2 * torch.log(std_2) - 2 * torch.log(std_1) + 
-            (std_1.pow(2) + (mean_1 - mean_2).pow(2)) /
-            std_2.pow(2) - 1)
-        return	0.5 * torch.sum(kld_element, dim=-1).mean()
+        #kld_element =  2 * torch.log(std_2) - 2 * torch.log(std_1) + 
+        #    (std_1.pow(2) + (mean_1 - mean_2).pow(2)) /
+        #    std_2.pow(2) - 1
+        
+        a = (torch.log(std_2)/torch.log(std_1) + ((std_1**2 + (mean_1-mean_2)**2)/(2*std_2)**2) - 0.5
+        
+        kld = torch.sum(a, dim=-1).mean()
+            
+        return kld
 
 
     def _nll_bernoulli(self, theta, x):
@@ -257,6 +263,6 @@ class VRNN(nn.Module):
 
     def _nll_gauss(self, mean, std, x):
 
-        nll = 0.5 * torch.sum((x-mean).pow(2) / (std**2) + 2 * torch.log(std) + np.log(2*np.pi), dim=-1).mean()
+        nll = torch.sum(torch.sqrt(x-mean) / 2*(std**2) + torch.log(std) + 0.5*np.log(2*np.pi), dim=-1).mean()
         
         return nll
