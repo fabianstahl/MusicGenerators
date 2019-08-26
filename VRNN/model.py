@@ -106,7 +106,7 @@ class VRNN(nn.Module):
         kld_loss = 0
         nll_loss = 0
 
-        h = Variable(torch.zeros(self.n_layers, x.size(1), self.h_dim))
+        h = Variable(torch.zeros(self.n_layers, x.size(1), self.h_dim)).to("cuda")
         
         for t in range(x.size(0)):
             
@@ -162,7 +162,7 @@ class VRNN(nn.Module):
 
         sample = torch.zeros(seq_len, self.x_dim)
 
-        h = Variable(torch.zeros(self.n_layers, 1, self.h_dim))
+        h = Variable(torch.zeros(self.n_layers, 1, self.h_dim)).to("cuda")
         for t in range(seq_len):
 
             #prior
@@ -203,7 +203,7 @@ class VRNN(nn.Module):
     def _reparameterized_sample(self, mean, std):
         """using std to sample"""
         eps = torch.FloatTensor(std.size()).normal_()
-        eps = Variable(eps)
+        eps = Variable(eps).to("cuda")
         return eps.mul(std).add_(mean)
 
 

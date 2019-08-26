@@ -29,10 +29,10 @@ x_dim = 200 # Frame Length, corresponds to 200 consecutive raw samples
 h_dim = 500 # Dimensions of the state vector
 z_dim = 200 # 
 n_layers =  1 
-n_epochs = 100
+n_epochs = 500
 clip = 10
 learning_rate = 1e-3 #= Paper!
-batch_size = 128 #= Paper!
+batch_size = 64#128 #= Paper!
 seed = 128 
 print_every = 50
 save_every = 10
@@ -86,7 +86,7 @@ def train(epoch, writer):
         
         #forward + backward + optimize
         optimizer.zero_grad()
-        kld_loss, nll_loss, _, _ = model(data)
+        kld_loss, nll_loss, _, _ = model(data.to(device))
         loss = kld_loss + nll_loss
         loss.backward()
         optimizer.step()
@@ -106,18 +106,7 @@ def train(epoch, writer):
                 kld_loss.data / batch_size,
                 nll_loss.data / batch_size))
 
-            samples = model.sample(test_seq_len)
             
-            samples = samples.flatten().cpu().float().numpy()
-            
-            norm_samples = ((samples[:] - samples[:].min()) / (0.00001 + (samples[:].max() - samples[:].min()))) * 1.9 - 0.95
-
-            writer.add_audio('test/sound{}'.format(global_step), norm_samples, global_step, sample_rate=16000)
-            
-            write_wav(os.path.join(results_path, dataset_name, "sample-{}.wav".format(batch_idx)), samples, sr=16000, norm=True)
-            writer.add_scalar('test/sample average', np.mean(samples), global_step)
-            writer.add_scalar('test/sample min', samples.min(), global_step)
-            writer.add_scalar('test/sample max', samples.max(), global_step)
             
             #plt.imshow(sample.numpy())
             #plt.pause(1e-6)
@@ -161,7 +150,18 @@ def test(epoch, writer):
 
 
 
+def generate(epoch, writer):
+    samples = model.sample(test_seq_len)
+    samples = samples.flatten().cpu().float().numpy()
+    
+    norm_samples = ((samples[:] - samples[:].min()) / (0.00001 + (samples[:].max() - samples[:].min()))) * 1.9 - 0.95
 
+    writer.add_audio('test/sound{}'.format(global_step), norm_samples, global_step, sample_rate=16000)
+    
+    write_wav(os.path.join(results_path, dataset_name, "sample-{:04d}.wav".format(epoch)), samples, sr=16000, norm=True)
+    writer.add_scalar('test/sample average', np.mean(samples), global_step)
+    writer.add_scalar('test/sample min', samples.min(), global_step)
+    writer.add_scalar('test/sample max', samples.max(), global_step)
         
         
         
@@ -199,7 +199,9 @@ if __name__ == "__main__":
         #training + testing
         train(epoch, writer)
         test(epoch, writer)
-
+        generate(epoch, writer)
+        
+        
         #saving model
         if epoch % save_every == 1:
             fn = 'saves/vrnn_state_dict_'+str(epoch)+'.pth'
