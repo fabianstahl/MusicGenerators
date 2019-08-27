@@ -88,6 +88,9 @@ def train(epoch, writer):
         optimizer.zero_grad()
         kld_loss, nll_loss, _, _ = model(data.to(device))
         loss = kld_loss + nll_loss
+        
+        print(torch.isnan(loss).item(), torch.isnan(kld_loss).item(), torch.isnan(nll_loss).item(), torch.sum(torch.isnan(data)).item())
+        
         loss.backward()
         optimizer.step()
         

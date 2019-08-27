@@ -1,6 +1,6 @@
 \documentclass[12pt]{article}
 \usepackage{graphicx}
-
+\usepackage{caption}
 
 \begin{document}
 
@@ -62,8 +62,8 @@ The two biggest reasons for that could be the high complexity of generating musi
 
 
 
-\section{Competing Models}
-\subsection{SampleRNN}
+
+\section{SampleRNN}
 Recurrent Neural Networks (RNNs) are used to process sequences of data.
 Output data is not only based upon input data, but also on a hidden state vector, that encodes previous input.
 RNNs consist of arrays of small memory units.
@@ -82,31 +82,34 @@ Its biggest drawback is, that sample quality varies strongly even after days of 
 
 
 
-\subsubsection{Architecture}
+\subsection{Architecture}
 \begin{figure}[ht]
     \label{fig:samplernn}
     \includegraphics[width=\textwidth]{img/samplernn.png}
     \caption{The SampleRNN consist of multiple Frame-Level Modules, two in this example, and a Sample-Level Module (tier 1). Here, tier 3 has a field of perception of 15 samples, whereas tier 2 uses 3 samples each step and needs to be called more frequently. The state vector $c$ of tier 3 is passed to tier 2 and combined with its state vector $h$. Tier 1 takes the product of $c$ and the sample input and feeds it trough a MLP to determine a probability distribution to draw the next sample. Note that this example is simplified. }
 \end{figure}
 
-\subsubsection{Experiments}
 
-\subsection{VRNN}
 
- % Paper
-\cite{VRNNgit} % Implementation
+
+
+
+
+
+
+\section{VRNN}
 
 % Idee (Markov, variational autoencoder erklären)
-
+\subsection{Idea}
 Another approach to generate sound data is the Variational Recurrent Neural Network (VRNN), proposed 2016 by Chung et al.~\cite{chung2015recurrent}.
 The architecture was trained on the tasks of handwriting and sound generation.
-However, experiments for the ladder only include training with speech datasets and non-linguistic human-made sounds like coughing and screaming.
+However, experiments for the ladder only included training with speech datasets and non-linguistic human-made sounds like coughing and screaming.
 This poses the question if the VRNN can be used to generate music as well.
 
-Chung et al. states, that there is an issue in the way that RNNs model output variety, since the only source of true randomness is drawing values from an output probability density.
+Chung et al. states that there is an issue in the way that RNNs model output variety, since the only source of true randomness is drawing values from an output probability density.
 Data that is both highly variable and highly structered can be hard to model this way.
 On the one hand small input variations should lead to potentially very large variations in the hidden state vector $h_t$, on the other hand, different high level structures need to be mapped to distinct state vectors as well.
-This forces the network to compromise the encoding of low-level and high-level features.
+This forces the network to compromise between the encoding of low-level and high-level features.
 The main idea of the VRNN is to extend a recurrent neural network with latent random variables, therefore improving the representational power of the model.
 Such high-level variables are commonly used in VAEs to model multimodal conditional distributions, approximating real world data variety~\cite{kingma2013auto}.
 % <Satz zu VAEs>
@@ -114,21 +117,45 @@ Chung et al. proposes to extend the VEA model by inducing temporal dependencies 
 
 
 
-
+ 
 % Architektur erklären (Diagramme, Fehlerfunktionen, Trainingsdiagramme)
+
+
+
+\subsection{Training}
+
+\begin{figure}
+\includegraphics{vrnn-arch.png}
+\label{fig:vrnn-arch}
+\caption{
+This image shows all necessary steps for a training cycle.
+First the raw audio data is passed through $\phi^x$ to extract features from $x_t$ (1).
+Since the KLD is used to make the $\phi^{prior}$ and $\phi^{enc}$ as similar as possible, the prior needs to be included in the model.
+It handles the state vector $h_t$ (2).
+The encoder $\phi^{enc}$ is used during training only.
+It takes the concatenated $\phi^x$ and the state vector $h_t$ (3).
+Next two single layer networks are used to calculate the standard deviation and the mean value of the generated distribution and a random sample $z$ is drawn from it (4).
+Another network $\phi^z$ is used to find features in $z$ (5).
+The decoder tries to replicate the mean and standard deviation of the input data. % ???
+It takes the concatenated $\phi^z$ and $h_t$ (6).
+$z$ and $h$ are passed to the RNN to determine a new state vector $h_{t+1}$ (7).
+Lastly the overall loss is calculated (8).
+It is composed of the KLD from $\phi^{prior}$ and $\phi^{dec}$ to make them similar, as well as a function to compare $x$ to $x:out$ % ???
+}
+\end{figure}
+
+
 
 
 
 % Describe p, q, ...
 
 conditional prior / generative model - p(x | z)
-
-variational approximation 
-approximate posterior / inference model - p(z | x)
+approximate posterior / inference model - q(z | x)
 prior over latent random variables - p(z)
 
 
-
+ 
 The model can be trained by minimizing the Kullback–Leibler divergence (KLD) - first term - and maximizing the likelihood of an $x$ given a $z$ - second term).
 This can be seen as adding a regulizer to a simple auto encoder to ensure that the generated distributions have a certain form.
 $$
@@ -137,7 +164,7 @@ $$
 
 The KLD between the two distributions $Q$ and $P$ with respect to $Q$ can be seen as a measurment of similarity between two distributions \cite{}.
 Since the probabilistic Encoder $q(z|x)$ is used to approximate the hard to compute posterior $p(x|z)$, $Q$ needs to be as similar to $P$ as possible.
-This means that the KL divergence needs to be minimized, which is identical to maximizing the lower variational bound~\cite{kingma2013auto}.
+This means that the KL divergence needs to be minimized, which is identical to maximizing the lower variational bound~\cite{kingma2013auto}. 
 %The KLD is defined as:
 %$$
 %KL(q || p) = -\sum p(x) log(\frac{p(x)}{q(x)})  
@@ -165,7 +192,7 @@ describes the second term, where %To_do!
 % Implementierungsdetaills
 Since the original source code was using the Theano ML library, I cloned a public PyTorch implementation~\cite{VRNNgit}.
 However, I found out, that I needed to make quite many adaptions to fit the original version.
-The biggest changes include a new data loader class, adding the correct error function, using more dense layers in all components and make the code more GPU-friendly.
+The biggest changes include a new data loader class, adding the correct error function, using more dense layers in all components and make the code more GPU-friendly. 
 
 
 % Results
@@ -173,7 +200,16 @@ The biggest changes include a new data loader class, adding the correct error fu
 \subsubsection{Architecture}
 \subsubsection{Training}
 
-\subsection{???}
+\subsection{WaveGAN}
+In 2014 Goodfellow et al. introduced a new approach to train networks ca lled Generative Adversariel Networks (GANs)~\cite{goodfellow2014generative}.
+Such architectures consist of a generator and a discriminator subnetwork.
+While the generator tries to generate realistic data, the discriminator tries to distinguish between real and generated data.
+Both networks are trained simultaniously and try to outperform each other.
+ 
+
+\cite{donahue2018adversarial} % WaveGAN
+ % GANs
+
 \subsubsection{Architecture}
 \subsubsection{Training}
 
