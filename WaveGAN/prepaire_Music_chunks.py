@@ -4,11 +4,11 @@ import pickle
 import os
 
 
-#root_path = "./data/drums/train/"
-root_path = "./data/within_the_ruins/train/"
-compressed_folder = "./raw/"
+#root_path = "./data/drums"
+root_path = "./data/mendelson"
+compressed_folder = "./raw"
 fs = 16000
-block_size = 16384
+block_size = 65536 #16384
 extensions = [".wav", ".mp3"]
 files = [os.path.join(root_path, im_path) for im_path in sorted(os.listdir(root_path)) if os.path.splitext(im_path)[1] in extensions]
 
@@ -99,9 +99,10 @@ for f in files:
 
 print("Split {} songs into {} chunks!".format(len(files), len(chunks)))
 
-dataset = root_path.split("/")[-3]
+dataset = root_path.split("/")[-1]
 print(root_path.split("/"))
 new_path = os.path.join(compressed_folder, dataset + ".data")
+print("Saving under {}".format(new_path))
 with open(new_path, "wb") as f:
     pickle.dump(np.array(chunks), f)
 
