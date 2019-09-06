@@ -55,7 +55,7 @@ However, musical nuances like tonal colors, scratch and breath noises or intonat
 Having MIDI output only, the musical interpretation, (the raw audio sent to the sound port), is up to an external MIDI synthesizer.
 
 There are commercial music streaming services that claim to provide generated music that fits the customer's mood.
-The most prominent of them beeing brain.fm~\cite{brain.fm} and \cite{Mubert}.
+The most prominent of them being brain.fm~\cite{brain.fm} and \cite{Mubert}.
 However, the brain.fm algorithm only learns certain tasks, such as arrangin motifs over long timescales, while melodies, instrument choices and chord progressions are precomposed by humans.
 Mubert also uses handcrafted single instrument MIDI loops, but generates some MIDI layers using decision trees, random forests and musical analysis.
 Their music is limited to electronic genres only, which narrows musical variety.
@@ -210,28 +210,32 @@ The biggest changes include a new data loader class, adding the correct error fu
 
 
 
-
-\subsection{WaveGAN}
-In 2014 Goodfellow et al. introduced a new approach to train networks ca lled Generative Adversariel Networks (GANs)~\cite{goodfellow2014generative}.
-Such architectures consist of a generator and a discriminator subnetwork.
-While the discriminator tries to distinguish between real and generated data, it is the generator's task to fool the discriminator into thinking its output is real.
-Both networks are trained simultaniously and try to outperform each other.
+\section{WaveGAN}
+In 2014 Goodfellow et al. introduced a new approach to train networks called Generative Adversarial Networks (GANs)~\cite{goodfellow2014generative}.
+Such architectures consist of a generator and a discriminator sub-network.
+While the discriminator tries to distinguish between real and generated data, it is the generator?s task to fool the discriminator into thinking its output is real.
+Both networks are trained simultaneously and try to outperform each other.
 
 While GANs have been used widely for tasks related to images, there are only few approaches using audio data.
-Donahue et al. presented two approaches to generate sound data.
+Donahue et al. presented two GAN approaches to generate sound data called \emph{WaveGAN} and \emph{SpecGAN}~\cite{donahue2018adversarial}.
 Both models are adaptions of a model class called Deep Convolutional Generative Adverserial Networks or DCGANs, first proposed by Radford et al.~\cite{radford2015unsupervised}.
-The \emph{SpecGAN} works with spectrogram images that are processed by the network in a similar way to normal images.
-However, the conversion from image to sound data is known to be problematic, since a lot of noise is induced.
-The second architecture, the \emph{WaveGAN}, is a flattened adaption of the original DCGAN model using 1D convolutions on raw audio samples.
+The SpecGAN works with spectrogram images that are processed by the network in a similar way to normal images.
+However, the final conversion from image to sound data is known to be problematic, since a lot of noise is induced.
+The second architecture, the WaveGAN, is a flattened adaption of the original DCGAN model using 1D convolutions on raw audio samples.
 Both models have the same number of parameters and numerical operations.
 However, neither strategy has been tested with music datasets.
-Since SpecGAN's lossy conversion poses difficulties beyond the actual AI model, only the second approach will be presented here.
+Since SpecGANs lossy conversion poses difficulties beyond the actual AI model, only the second approach will be presented here.
+
+Unfortunately the original model description is only capable to generate about a second of audio.
+By adding one more transposed convolution layer to the encoder, one convolution layer to the decoder, and increasing the number of intermediate output channels, the models generating capacity can be increased to about 4 seconds, possibly
+enabling whole musical motifs. 
+This expanded model can be found on the authors GIT repository\cite{donahue2019wavegan}.
 
 
 
-\subsubsection{Architecture}
+\subsection{Architecture}
 The generator network is trained to map a low-dimensional latent vector $z$ to a high-dimensional data output.
-First the network applies a fully connected layer with $256d$ output nodes to $z$, where $d$ is used to adjust the models size.
+First the network applies a fully connected layer with $512d$ output nodes to $z$, where $d$ is used to adjust the models size.
 The output vector is then reshaped, since an additional dimension is needed for the sound channel.
 The signal then passes through 5 transposed 1D convolution layers with stride 4 and ReLU activation functions in between as well as a Tanh function at the end.
 
@@ -242,10 +246,6 @@ Since the generators transposed convolution is known to produce artifacts, the d
 Shifting the vector randomly up to $n$ times in a circle can prevent this learning behaviour.
 See figure \ref{fig:WaveGAN-arch} for a visualization of the graph with parameters.
 
-The network is trained using the Wasserstein-GAN Gradient Penalty, or short \emph{WGAN-GP}, strategy.
-That means, that instead of predicting probabilities, the discriminator is trained to assist computing the wasserstein or earth movers distance between the distribution of generated data and distribution of real examples.
-However, minimizing this measure is only possible if the discriminator function is 1-Lipschitz, which can be done by enforcing a gradient penalty~\cite{gulrajani2017improved}.
-
 
 % To-Do!
 \begin{figure}
@@ -254,31 +254,55 @@ However, minimizing this measure is only possible if the discriminator function 
 \caption{Architecture of the WaveGAN, where $d$ adjusts the models size, $n$ is the batch size and $c$ is the number of output channels.}%To-Do
 \end{figure}
 
+\subsection{Training}
 
-% Error Function
+Training GANs can be seen as a two player minimax game. 
+While the generator $G$ is trained to minimize the following value function, the discriminator
+$D_w$ is trained to maximize it.
 
+$$
+V_{WGAN}(D_w, G) = E_{x \sim P_x}[D_w(x)] - E_{z \sim P_z}[D_w(G(z))]
+$$
 
-% DIS Advantage
-- The main drawback of the WaveGAN is the models limitation to generate music of more than a couple seconds.
-+ Unlike other autoregressive models, where samples have be be fed back, the WaveGAN audio generation is extremely fast.
-+ only architecture to produce multi-chanel sound (with out of the box descriptions)
+The network is trained using the Wasserstein-GAN Gradient Penalty, or short \emph{WGAN-GP}, strategy.
+That means, that instead of predicting probabilities, the discriminator is trained to assist computing the wasserstein or
+earth movers distance between the distribution of generated data and distribution of real examples.
+However, minimizing this measure is only possible if the discriminator function is 1-Lipschitz, which can be done by enforcing a gradient penalty.
+For more details on the WGAN-GP stategy see~\cite{gulrajani2017improved}.
 
- 
- 
-\cite{donahue2018adversarial} % WaveGAN
- % GANs
+In most experiments training was stopped in between $40.000$ and $50.000$ steps since no more progress was achieved.
+On a NVIDIA RTX2080 GPU, this took about a day and 7 of 8Gb RAM.
+All other parameter choices are similar to [?].
+Adam Optimizer with $learning rate = 1e ? 4$, $?1 = 0.5$ and $?2 = 0.9$
+was used for both discriminator and generator.
+The model was trained using both a batch size $b$ and a scale factor $d$ of 64.
 
-
-\subsubsection{Training}
 
 \section{Evaluation}
-\subsection{Challenges}
-\subsection{Performance}
-\subsection{Comparison to Real Music}
-\subsection{Human Evaluation}
+SampleRNN, VRNN and WaveGAN have been rained on
+\begin{itemize}
+ \item piano music (Felix Mendelssohn: Lieder ohne Worte, about 2 hours)
+ \item instrumental metal (Intervals: The way forward + The shape of colour, about ??? hours)
+ \item hip-hop (Cypress Hill: IV, 1 hour and 13 minutes)
+\end{itemize}
 
-\section{Discussion and future work}
+For SampleRNN and VRNN the music was split into 8 second and for WaveGAN into 4 second chunks.
+Audio examples can be found in the repository folder examples. % TO-DO!
 
+
+
+\section{Discussion}
+Despite GANS being often hard to train, WaveGAN has the most simple architecture out of all three models.
+Unlike both other autoregressive models, where samples have to be fed back into the model, the WaveGAN audio generation is feed-forward only, which makes generation extremely fast.
+It also is the only architecture that is (out-of-the-box) capable of producing multi-channel sound output.
+However, the main drawback of the WaveGAN is the models limitation to generate music of more than a couple seconds.
+Regarding memory and complexity requirements compared to the other models, WaveGAN is very hard to scale.
+
+In all experiments the model did learn to produce music that somewhat showed features from the input data.
+In Samples one can often observe instruments, small riffs and drum hits.
+However, in all experiments the networks never fully learned to reduce noise.
+This can clearly be heard in the examples and often even dominates them.
+Increasing the model and batch size on a GPU with more RAM might help.
 
 
 
