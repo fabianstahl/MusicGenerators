@@ -104,6 +104,13 @@ Conditioning vectors from the Frame Level Modules are refreshed using a lower cl
 
 
 \subsection{Training}
+
+\begin{figure}[ht!]
+    \includegraphics[width=\textwidth]{img/samplernn-arch.png}
+    \caption{No caption} % To-DO
+    \label{fig:samplernn-arch}
+\end{figure}
+
 To allow an efficient training of the model, truncated backpropagation through time is used.
 Since it is computational very expensive to propagate gradients back after a full song, training on shorter subsequences of 8 seconds is much more feasible. % To-Do - how??
 The initial state vectors of all GRUs was learned.
@@ -141,11 +148,7 @@ Based on this score the Adam optimizer adjusts the models parameters (8).
 SampleRNN experiments were stopped after $???$ steps since no more progress was achieved.
 On a NVIDIA RTX2080 GPU, this took about $???$ and almost the full 8Gb RAM.
 
-\begin{figure}[ht!]
-    \includegraphics[width=\textwidth]{img/samplernn-arch.png}
-    \caption{No caption} % To-DO
-    \label{fig:samplernn-arch}
-\end{figure}
+
 
 
 
@@ -176,11 +179,13 @@ Chung et al. proposes to extend the VEA model by inducing temporal dependencies 
 
 \subsection{Training}
 
-\begin{figure}
-\includegraphics{vrnn-arch.png}
+\begin{figure}[ht!]
+\includegraphics[width=0.9\textwidth]{img/vrnn-arch.png}
 \label{fig:vrnn-arch}
-\caption{
-This image shows all necessary steps for a training cycle.
+\caption{VRNN architecture} % To-DO!
+\end{figure}
+
+Figure \ref{fig:vrnn-arch} shows all necessary steps for a training cycle.
 First the raw audio data is passed through $\phi^x$ to extract features from $x_t$ (1).
 Since the KLD is used to make the $\phi^{prior}$ and $\phi^{enc}$ as similar as possible, the prior needs to be included in the model.
 It handles the state vector $h_t$ (2).
@@ -193,10 +198,6 @@ It takes the concatenated $\phi^z$ and $h_t$ (6).
 $z$ and $h$ are passed to the RNN to determine a new state vector $h_{t+1}$ (7).
 Lastly the overall loss is calculated (8).
 It is composed of the KLD from $\phi^{prior}$ and $\phi^{dec}$ to make them similar, as well as a function to compare $x$ to $x:out$ % ???
-}
-\end{figure}
-
-
 
 
 
@@ -296,14 +297,16 @@ Shifting the vector randomly up to $n$ times in a circle can prevent this learni
 See figure \ref{fig:WaveGan-arch} for a visualization of the graph with parameters.
 
 
+
+
+\subsection{Training}
+
 % To-Do!
 \begin{figure}[ht!]
 \includegraphics[width=0.9\textwidth]{img/wavegan-arch.png}
 \caption{Architecture of the WaveGAN, where $d$ adjusts the models size, $n$ is the batch size and $c$ is the number of output channels.}%To-Do
 \label{fig:WaveGan-arch}
 \end{figure}
-
-\subsection{Training}
 
 Training GANs can be seen as a two player minimax game. 
 While the generator $G$ is trained to minimize the following value function, the discriminator
@@ -325,6 +328,11 @@ All other parameter choices are similar to \cite{donahue2018adversarial}.
 Adam Optimizer with $learning rate = 1e ? 4$, $?1 = 0.5$ and $?2 = 0.9$
 was used for both discriminator and generator.
 The model was trained using both a batch size $b$ and a scale factor $d$ of 64.
+
+
+
+
+
 
 
 \section{Evaluation}
@@ -352,7 +360,8 @@ Another drawback of the SampleRNN is the long music generation time since every 
 With the architecture described above it takes about <20> minutes to generate 2 minutes of audio. % To-do!
 However, assuming that there is enough memory, increasing generation batch size does not affect the overall generation time since it can be parallelized.
 
-% -  causing the loss values to shoot up and the resulting audio to revert to static. (sogar im Orginal!)
+% VRNN
+% does not work
 
 % WaveGAN
 Despite GANS being often hard to train, WaveGAN has the most simple architecture out of all three models.

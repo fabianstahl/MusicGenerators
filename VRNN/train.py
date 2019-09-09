@@ -16,6 +16,13 @@ import matplotlib.pyplot as plt
 from model import VRNN
 
 
+
+
+# To-DO!
+
+# - try way smaller samples
+
+
 """implementation of the Variational Recurrent
 Neural Network (VRNN) from https://arxiv.org/abs/1506.02216
 using unimodal isotropic gaussian distributions for 
@@ -26,20 +33,17 @@ inference, prior, and generating models."""
 #hyperparameters
 gpu = 1
 x_dim = 200 # Frame Length, corresponds to 200 consecutive raw samples
-h_dim = 500 # Dimensions of the state vector
 z_dim = 200 # 
 n_layers =  1 
 n_epochs = 500
 clip = 10
-learning_rate = 1e-3 #= Paper!
+learning_rate = 1e-4 #= Paper!
 batch_size = 64#128 #= Paper!
 seed = 128 
 print_every = 50
 save_every = 10
 test_seq_len = 300
 
-rnn_dim = 4000 # NOT USED! BUILD!
-num_k = 1#20 # NOT! DO!
 
 dataset_root = "datasets"
 dataset_name = "intervals"
@@ -118,6 +122,8 @@ def train(epoch, writer):
         global_step += 1
         
         train_loss += loss.data
+        
+        
 
 
     print('====> Epoch: {} Average loss: {:.4f}'.format(
@@ -181,8 +187,8 @@ if __name__ == "__main__":
     test_loader = data_loader(0.9, 1.0, eval=True)
     
     writer = SummaryWriter(os.path.join(results_path, dataset_name))
-    
-    model = VRNN(x_dim, h_dim, z_dim, n_layers, num_k, device).to(device)
+
+    model = VRNN(x_dim, z_dim, n_layers, device).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     for epoch in range(1, n_epochs + 1):

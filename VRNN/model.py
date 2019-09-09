@@ -17,87 +17,93 @@ inference, prior, and generating models."""
 
 
 class VRNN(nn.Module):
-    def __init__(self, x_dim, h_dim, z_dim, n_layers, num_k, device, bias=False):
+    def __init__(self, x_dim, z_dim, n_layers, device, bias=False):
         super(VRNN, self).__init__()
 
         self.x_dim = x_dim
-        self.h_dim = h_dim
         self.z_dim = z_dim
         self.n_layers = n_layers
-        self.num_k = num_k
         self.device = device
+        
+        self.num_x_features = 600
+        self.num_z_features = 500
+        self.num_h_features = 4000
+        self.num_enc_features = 500
+        self.num_dec_features = 6000
+        self.num_prior_features = 500
+        
 
         #feature-extracting transformations
         self.phi_x = nn.Sequential(
-            nn.Linear(x_dim, h_dim),
+            nn.Linear(x_dim, self.num_x_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_x_features, self.num_x_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_x_features, self.num_x_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_x_features, self.num_x_features),
             nn.ReLU())
         
         self.phi_z = nn.Sequential(
-            nn.Linear(z_dim, h_dim),
+            nn.Linear(z_dim, self.num_z_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_z_features, self.num_z_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_z_features, self.num_z_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_z_features, self.num_z_features),
             nn.ReLU())
 
         #encoder
         self.enc = nn.Sequential(
-            nn.Linear(h_dim + h_dim, h_dim),
+            nn.Linear(self.num_x_features + self.num_h_features, self.num_enc_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_enc_features, self.num_enc_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_enc_features, self.num_enc_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_enc_features, self.num_enc_features),
             nn.ReLU()
             )
-        self.enc_mean = nn.Linear(h_dim, z_dim)
+        self.enc_mean = nn.Linear(self.num_enc_features, z_dim)
         self.enc_std = nn.Sequential(
-            nn.Linear(h_dim, z_dim),
+            nn.Linear(self.num_enc_features, z_dim),
             nn.Softplus())
 
         #prior
         self.prior = nn.Sequential(
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_h_features, self.num_prior_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_prior_features, self.num_prior_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_prior_features, self.num_prior_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_prior_features, self.num_prior_features),
             nn.ReLU())
-        self.prior_mean = nn.Linear(h_dim, z_dim)
+        self.prior_mean = nn.Linear(self.num_prior_features, z_dim)
         self.prior_std = nn.Sequential(
-            nn.Linear(h_dim, z_dim),
+            nn.Linear(self.num_prior_features, z_dim),
             nn.Softplus())
 
         #decoder
         self.dec = nn.Sequential(
-            nn.Linear(h_dim + h_dim, h_dim),
+            nn.Linear(self.num_z_features + self.num_h_features, self.num_dec_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_dec_features, self.num_dec_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_dec_features, self.num_dec_features),
             nn.ReLU(),
-            nn.Linear(h_dim, h_dim),
+            nn.Linear(self.num_dec_features, self.num_dec_features),
             nn.ReLU())
         self.dec_std = nn.Sequential(
-            nn.Linear(h_dim, self.num_k * x_dim),
+            nn.Linear(self.num_dec_features, x_dim),
             nn.Softplus())
         #self.dec_mean = nn.Linear(h_dim, x_dim)
-        self.dec_mean = nn.Linear(h_dim, self.num_k * x_dim)
+        self.dec_mean = nn.Linear(self.num_dec_features, x_dim)
 
 
         #recurrence
-        self.rnn = nn.GRU(h_dim + h_dim, h_dim, n_layers, bias) #(input_size, hidden_size, n_layers, bias)
+        self.rnn = nn.GRU(self.num_x_features + self.num_z_features, self.num_h_features, n_layers, bias) #(input_size, hidden_size, n_layers, bias)
 
 
     def forward(self, x):
@@ -108,47 +114,45 @@ class VRNN(nn.Module):
         #nll_loss = 0
         mse_loss = 0
 
-        h = Variable(torch.zeros(self.n_layers, x.size(1), self.h_dim)).to(self.device)
+        h = Variable(torch.zeros(self.n_layers, x.size(1), 4000)).to(self.device)
         
         for t in range(x.size(0)):
             
             phi_x_t = self.phi_x(x[t])
-
+            
             # Encoder (Equation 9 in Paper)
             enc_t = self.enc(torch.cat([phi_x_t, h[-1]], 1))
             enc_mean_t = self.enc_mean(enc_t)
             enc_std_t = self.enc_std(enc_t)
-
+            
             # Prior (Equation 5 in Paper)
             prior_t = self.prior(h[-1])
             prior_mean_t = self.prior_mean(prior_t)
             prior_std_t = self.prior_std(prior_t)
-
+            
             # Random Sampling 
             z_t = self._reparameterized_sample(enc_mean_t, enc_std_t)
+            #print("z_t", z_t.shape)
             
             # Encode the sampled z (Equation 6 in Paper) 
             phi_z_t = self.phi_z(z_t)
+            #print("phi z_t", phi_z_t.shape)
 
             # Decoder (Equation 6 in Paper)
             dec_t = self.dec(torch.cat([phi_z_t, h[-1]], 1))
             dec_mean_t = self.dec_mean(dec_t)
             dec_std_t = self.dec_std(dec_t)
-
-
+            
             # Recurrence / Update hidden state (Equation 7 in paper)
             _, h = self.rnn(torch.cat([phi_x_t, phi_z_t], 1).unsqueeze(0), h) # not sure, before just h
-
+            
             #computing losses
             kld_loss += self._kld_gauss2(enc_mean_t, enc_std_t, prior_mean_t, prior_std_t)
+            #print("kld ", kld_loss.shape) 
+            
             #nll_loss += self._nll_gauss(dec_mean_t, dec_std_t, x[t])
             mse_loss += self._MSELoss(x[t], dec_mean_t)
             
-            
-            #x_in = x.reshape((x.shape[0]*x.shape[1],-1))
-            
-            #nll_loss += self._GMM(x_in, dec_mean_t, dec_std_t, coeff)
-
             all_enc_std.append(enc_std_t)
             all_enc_mean.append(enc_mean_t)
             all_dec_mean.append(dec_mean_t)
@@ -163,7 +167,7 @@ class VRNN(nn.Module):
 
         sample = torch.zeros(seq_len, self.x_dim)
 
-        h = Variable(torch.zeros(self.n_layers, 1, self.h_dim)).to(self.device)
+        h = Variable(torch.zeros(self.n_layers, 1, 4000)).to(self.device)
         
         for t in range(seq_len):
 
@@ -181,8 +185,6 @@ class VRNN(nn.Module):
             dec_mean_t = self.dec_mean(dec_t)
             #dec_std_t = self.dec_std(dec_t)
             
-
-
             phi_x_t = self.phi_x(dec_mean_t)
 
             #recurrence
@@ -212,15 +214,14 @@ class VRNN(nn.Module):
     def _kld_gauss(self, mean_1, std_1, mean_2, std_2):
         """Using std to compute KLD"""
 
-        #kld_element =  2 * torch.log(std_2) - 2 * torch.log(std_1) + 
-        #    (std_1.pow(2) + (mean_1 - mean_2).pow(2)) /
-        #    std_2.pow(2) - 1
+        kld_element =  (2 * torch.log(std_2) - 2 * torch.log(std_1) + (std_1.pow(2) + (mean_1 - mean_2).pow(2)) / std_2.pow(2) - 1)
+        return	0.5 * torch.sum(kld_element)
         
-        a = torch.log(std_2)/torch.log(std_1) + ((std_1**2 + (mean_1-mean_2)**2)/(2*std_2)**2) - 0.5
+        #a = torch.log(std_2)/torch.log(std_1) + ((std_1**2 + (mean_1-mean_2)**2)/(2*std_2)**2) - 0.5
         
-        kld = torch.sum(a, dim=-1).mean()
+        #kld = torch.sum(a, dim=-1).mean()
             
-        return kld
+        #return kld
     
     
     def _kld_gauss2(self, mean_1, std_1, mean_2, std_2):
