@@ -1,0 +1,288 @@
+
+<html>
+<head>
+<title>Comparing sample-based music generation algorithms</title>
+</head>
+
+<body>
+<h1>Comparing sample-based music generation algorithms</h1>
+
+
+
+<table>
+<tr>
+    <th>Dataset</th>
+    <th>Random Training Sample</th>
+</tr>
+<tr>
+    <td>
+        Melodic Metal (Intervals)
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/intervals-sample.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+
+<tr>
+    <td>
+        Hip-Hop (Cypress Hill)
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/cypress-sample.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+
+<tr>
+    <td>
+        Piano Music (Mendelssohn)
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/mendelssohn-sample.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+</table>
+
+<br><br>
+<br>
+
+
+<table style="width:100%">
+<tr>
+    <th>Dataset</th>
+    <th>Training Progress<br>(training output relative to the total training time)</th>
+    <th>SampleRNN</th>
+    <th>VRNN</th>
+    <th>WaveGAN</th>
+</tr>
+
+<tr>
+    <td>
+        Melodic Metal (Intervals)
+    </td>
+    <td>
+        5%
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/samplernn-intervals-5.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/vrnn-intervals-5.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/wavegan-intervals-5.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+
+<tr>
+    <td>
+
+    </td>
+    <td>
+        50%
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/samplernn-intervals-50.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/vrnn-intervals-50.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/wavegan-intervals-50.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+
+<tr>
+    <td>
+
+    </td>
+    <td>
+        100%
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/samplernn-intervals-100.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/vrnn-intervals-100.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/wavegan-intervals-100.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+
+
+
+
+<tr>
+    <td>
+        Hip-Hop (Cypress Hill)
+    </td>
+    <td>
+        5%
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/samplernn-cypress-5.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/vrnn-cypress-5.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/wavegan-cypress-5.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+
+<tr>
+    <td>
+
+    </td>
+    <td>
+        50%
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/samplernn-cypress-50.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/vrnn-cypress-50.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/wavegan-cypress-50.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+
+<tr>
+    <td>
+
+    </td>
+    <td>
+        100%
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/samplernn-cypress-100.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/vrnn-cypress-100.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/wavegan-cypress-100.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+
+
+
+
+<tr>
+    <td>
+        Piano Music (Mendelssohn)
+    </td>
+    <td>
+        5%
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/samplernn-mendelssohn-5.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/vrnn-mendelssohn-5.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/wavegan-mendelssohn-5.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+
+<tr>
+    <td>
+
+    </td>
+    <td>
+        50%
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/samplernn-mendelssohn-50.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/vrnn-mendelssohn-50.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/wavegan-mendelssohn-50.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+
+<tr>
+    <td>
+
+    </td>
+    <td>
+        100%
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/samplernn-mendelssohn-100.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/vrnn-mendelssohn-100.wav" type="audio/wav">
+        </audio>
+    </td>
+    <td>
+        <audio controls>
+            <source src="assets/wavegan-mendelssohn-100.wav" type="audio/wav">
+        </audio>
+    </td>
+</tr>
+</table>
+
+</body>
+</html>
