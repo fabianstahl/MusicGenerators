@@ -16,13 +16,6 @@ import matplotlib.pyplot as plt
 from model import VRNN
 
 
-
-
-# To-DO!
-
-# - try way smaller samples
-
-
 """implementation of the Variational Recurrent
 Neural Network (VRNN) from https://arxiv.org/abs/1506.02216
 using unimodal isotropic gaussian distributions for 
@@ -34,19 +27,19 @@ inference, prior, and generating models."""
 gpu = 1
 x_dim = 200 # Frame Length, corresponds to 200 consecutive raw samples
 z_dim = 200 # 
-n_layers =  1 
-n_epochs = 500
-clip = 10
-learning_rate = 1e-4 #= Paper!
-batch_size = 64#128 #= Paper!
-seed = 128 
-print_every = 50
+n_layers =  1
+n_epochs = 10000
+clip = 0.5
+learning_rate = 0.0003
+batch_size = 128
+seed = 20126
+print_every = 1#50
 save_every = 10
 test_seq_len = 300
 
 
 dataset_root = "datasets"
-dataset_name = "intervals"
+dataset_name = "intervals_full"#"test-shorter"# #"cypress"
 results_path = "results"
 
 global_step = 0
@@ -66,7 +59,7 @@ def make_data_loader(bs, seq_len, dataset_root, dataset_name):
             batch_size=bs,
             seq_len=seq_len,
             shuffle=(not eval),
-            drop_last=(not eval)
+            drop_last=True#(not eval)
         )
     return data_loader
 
@@ -75,8 +68,10 @@ def make_data_loader(bs, seq_len, dataset_root, dataset_name):
 def train(epoch, writer):
     global global_step
     train_loss = 0
-    global_step = 0
+    #global_step = 0
     for batch_idx, data in enumerate(train_loader):
+
+        #print("\ntrain start", torch.sum(torch.isnan(data)), torch.sum(torch.isinf(data)))
 
         #transforming data
         #data = Variable(data)
@@ -86,24 +81,34 @@ def train(epoch, writer):
         data = Variable(data.squeeze().transpose(0, 1))
     
         # normalize input data so that mean = 0 and in range[0,1]
-        data = (data - data.min().data) / (data.max().data - data.min().data)
+        #data = (data - data.min().data) / (data.max().data - data.min().data)
         
         #forward + backward + optimize
         optimizer.zero_grad()
         kld_loss, nll_loss, _, _ = model(data.to(device))
+        
+
         loss = kld_loss + nll_loss
+
+
+        if loss < 5000000:
+            loss.backward()
         
-        print(torch.isnan(loss).item(), torch.isnan(kld_loss).item(), torch.isnan(nll_loss).item(), torch.sum(torch.isnan(data)).item())
+            #grad norm clipping, only in pytorch version >= 1.10
+            nn.utils.clip_grad_norm_(model.parameters(), clip)
+            optimizer.step()
         
-        loss.backward()
-        optimizer.step()
+        
+        #print(torch.isnan(loss).item(), torch.isnan(kld_loss).item(), torch.isnan(nll_loss).item(), torch.sum(torch.isnan(data)).item())
+        
+
         
         writer.add_scalar('train/KLD loss', kld_loss, global_step)
         writer.add_scalar('train/NLL loss', nll_loss, global_step)
         writer.add_scalar('train/Overall loss', loss, global_step)
 
-        #grad norm clipping, only in pytorch version >= 1.10
-        nn.utils.clip_grad_norm_(model.parameters(), clip)
+
+        
         
         #printing
         if batch_idx % print_every == 0:
@@ -114,9 +119,6 @@ def train(epoch, writer):
                 nll_loss.data / batch_size))
 
             
-            
-            #plt.imshow(sample.numpy())
-            #plt.pause(1e-6)
         
 
         global_step += 1
@@ -139,11 +141,11 @@ def test(epoch, writer):
         
         #data = Variable(data)
         data = Variable(data.squeeze().transpose(0, 1)).to(device)
-        data = (data - data.min().data) / (data.max().data - data.min().data)
 
         kld_loss, nll_loss, _, _ = model(data)
         mean_kld_loss += kld_loss.data
         mean_nll_loss += nll_loss.data
+
 
     mean_kld_loss /= len(test_loader.dataset)
     mean_nll_loss /= len(test_loader.dataset)
@@ -160,8 +162,12 @@ def test(epoch, writer):
 
 
 def generate(epoch, writer):
+    model.eval()
     samples = model.sample(test_seq_len)
+    model.train()
     samples = samples.flatten().cpu().float().numpy()
+    
+    
     
     norm_samples = ((samples[:] - samples[:].min()) / (0.00001 + (samples[:].max() - samples[:].min()))) * 1.9 - 0.95
 
@@ -177,8 +183,7 @@ def generate(epoch, writer):
 if __name__ == "__main__":
     
     #manual seed
-    torch.manual_seed(seed)
-    plt.ion()
+    #torch.manual_seed(seed)
 
     
     data_loader = make_data_loader(batch_size,
@@ -189,13 +194,16 @@ if __name__ == "__main__":
     writer = SummaryWriter(os.path.join(results_path, dataset_name))
 
     model = VRNN(x_dim, z_dim, n_layers, device).to(device)
+    
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    #optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+
 
     for epoch in range(1, n_epochs + 1):
         
         #training + testing
         train(epoch, writer)
-        test(epoch, writer)
+        #test(epoch, writer)
         generate(epoch, writer)
         
         
