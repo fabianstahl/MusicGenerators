@@ -381,13 +381,21 @@ Despite its relative complicated architecture, the SampleRNN learned to produce 
 It takes much more training to reduce noise and generate more complex features like guitar riffs.
 In my experiments SampleRNN was able to produce the most clean sound compared to the other models.
 However, sample quality varies strongly even after days of training.
-With the Hip-Hop dataset the model even completely regressed to produce random sounds.
+With the Hip-Hop dataset the model even completely regressed to produce random sounds, even though it learned to produce recognizable voices at training start (as the only contestant).
 These quality variations were also described by \cite{carr2018generating} who advised to restart training if output samples during training remain bad.
+Occasional loss deteriorations can also be seen in both trainings and validation losses (see Figure \ref{fig:samplernn-eval}).
 Future work should investigate how to avoid this unpredictable behavior.
 
 Another drawback of the SampleRNN is the long music generation time since every generation cycle outputs a single sample that needs to be fed back into the model.
 With the architecture described above it takes about half an hour to generate 5 minutes of audio.
 However, assuming that there is enough memory, increasing generation batch size does not affect the overall generation time since it can be parallelized.
+\begin{figure}
+\includegraphics[width=0.45\textwidth]{img/sample-rnn-train.png}
+\includegraphics[width=0.45\textwidth]{img/sample-rnn-val.png}
+\caption{Occasional fluctuations can be seen in the SampleRNN trainig loss (left) as well as in the validation loss (right). There seems to be a point where the Piano dataset (orange, 120k) and the Hip-Hop dataset (red, 40k) "unlearn" certain features. Only with the Metal dataset, the model is able to lower trainings loss continuously. Experimenting with Dropout layers in the sample-level module resultet in a non-increasing validation loss, but seemed to compromise sound quality.}
+\label{fig:samplernn-eval}
+\end{figure}
+
 
 
 
@@ -395,14 +403,21 @@ However, assuming that there is enough memory, increasing generation batch size 
 The VRNN model proved to be the worse candidate in terms of output quality and training difficulty.
 Compared to the SampleRNN, that generates assignable instrument sounds after a few epochs, the VRNN training progress is very slow, yielding sawtooh-like waves most of the time.
 Also exploding gradients and huge loss values cause the training to crash despite of gradient clipping with a threshold of $0.1$.
-This is also caused by small hyper-parameter changes, for example the dimension of $h$ or the number of fully-connected neurons in all layers.
-Despite experimenting with different parameter combinations and error functions used by \cite{chung2015recurrent} for speech generation, no model seemed capable of learning to produce music or even simple instrument features.
-A known problem with AEs that process images is that they tend to produce blurry results as a compromise of the two error functions.
-Especially when listening to the Intervals experiment, one could assume that this happens with music data as well.
+Despite input data normalization this seems to depend on the dataset used.
+While every attempt to train the model with the full Metal dataset failed because of huge gradients, using a single Metal album the loss converged (The provided example output was generated using this model).
+The Hip-Hop dataset caused the training to fail about 70\% of the time and the Piano dataset score converged almost always.
+This behavior suggests that the models learning success depends to big parts on the input data.
+However, exploding gradients are also caused by small hyper-parameter changes, for example the dimension of $h$ or the number of fully-connected neurons in all layers.
+
+Despite experimenting with different parameter combinations and error functions used by \cite{chung2015recurrent} for speech generation, no trained model seemed capable of learning to produce whole motifs. 
+At most very distorted features like drum hits, single notes or scratches are generated.
+A known problem with auto-encoders that process images is that they tend to produce blurry due to the nature of the error function~\cite{larsen2015autoencoding}.
+Especially when listening to the Metal and the Piano experiment, one could assume that this happens with music produced by the VRNN as well.
 
 In terms of generation speed, the VRNN is considerably faster than the SampleRNN with about 50 seconds for 5 minutes of audio.
 This makes the VRNN a potential candidate for real-time applications.
 The generation can also be parallelized.
+The trade-off to this is a long training time of more than 2 days on a RTX2080 using 7GB RAM (if the model is converging).
 
 
 \textbf{WaveGAN}\\
@@ -422,7 +437,7 @@ Increasing the model and batch size on a GPU with more RAM might help.
 
 \section{Conclusion}
 In order to generate new music, the models first need to learn to extract features from real data.
-Since sound data can be very large it is a complex task to get information out of the raw samples.
+Since sound data can be very large it is a complex task to get compressed information out of the raw samples.
 I have presented three strategies to tackle this difficulty.
 \begin{itemize}
  \item The SampleRNN uses hierarchical stacked RNNs with different clock rates to detect features on different scales.
@@ -430,17 +445,23 @@ I have presented three strategies to tackle this difficulty.
  \item The WaveGAN learns to replicate real data using the WGAN-GP strategy.
 \end{itemize}
 
-I have showed that at least the SampleRNN and the WaveGAN are capable of producing music with features from the input dataset.
-However, all approaches have crucial drawbacks.
+I have showed that all architectures are capable of producing music with features from the input dataset.
+While the SampleRNN is better for louder music generes like Metal, VRNN and WaveGAN performed better on music with a single instrument like the piano.
+However, all approaches have crucial drawbacks in terms of architecture complexity, memory restrictions, consistency during training or generation efficiency.
 In my experiments no network was able to reliably produce realistic music with all datasets.
 Some experiments even completely regressed.
-Generally speaking, SampleRNN seems to be better for louder music genres, while WaveGAN is better for more quiet music like piano recordings.
 More research is necessary to improve sound quality as well as training stability.
 
 
 
 
+
+
+
+
+
 \newpage
+
 \bibliographystyle{plain} % Literaturverzeichnis
 \begin{btSect}{doc} % mit bibtopic Quellen trennen
 \section*{Sources}
