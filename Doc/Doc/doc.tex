@@ -35,7 +35,7 @@
 \textbf{NLL} & Negative Log-Likelihood \\
 \textbf{ReLU} & Rectified Linear Unit \\
 \textbf{RNN} & Recurrent Neural Network \\
-\textbf{VAE} & Variational Autoencoder \\
+\textbf{VAE} & Variational Auto-encoder \\
 \textbf{VRNN} & Variational Recurrent Neural Network \\
 \end{tabular}
 \end{center}
@@ -58,7 +58,7 @@ In the field of audio generation there is a wide variety of approaches.
 Most of them work with symbolic music representations, such as ASCII-text, musical scores or spectrogram data.
 Especially the MIDI format is commonly used, a binary format specifying musical notes.
 This makes the format very slim and easy to work with.
-MIDI-based approaches include e.g. Generate Adversarial Neural Networks with convolutions layers ~\cite{yang2017midinet, mogren2016c, mogren2016c}, Variational Autoencoders paired with Long Short-term memory cells~\cite{roberts2018hierarchical, tikhonov2017music, hennig2017classifying} and Recurrent neural networks with restricted Boltzmann machines \cite{boulanger2012modeling}.
+MIDI-based approaches include e.g. Generate Adversarial Neural Networks with convolutions layers ~\cite{yang2017midinet, mogren2016c, mogren2016c}, Variational Auto-encoders paired with Long Short-term memory cells~\cite{roberts2018hierarchical, tikhonov2017music, hennig2017classifying} and Recurrent neural networks with restricted Boltzmann machines \cite{boulanger2012modeling}.
 However, musical nuances like tonal colors, scratch and breath noises or intonations are necessary to make most music genres more realistic.
 While sometimes these small subtle variations are not even perceived consciously, their absence can affect the overall impression. 
 Having MIDI output only, the musical interpretation, (the raw audio sent to the sound port), is up to an external MIDI synthesizer that cannot produce these nuances.
@@ -171,24 +171,22 @@ However, experiments for the first only included training with speech datasets a
 This poses the question if the VRNN can be used to generate music as well.
 
 Chung et al. states that there is an issue in the way that RNNs model output variety, since it is often the only source of true randomness to draw values from an output probability density.
-Data that is both highly variable and highly structered can be hard to model this way.
+Data that is both highly variable and highly structured can be hard to model this way.
 On the one hand small input variations should lead to potentially very large variations in the hidden state vector $h_t$, on the other hand, different high level structures need to be mapped to distinct state vectors as well.
 This forces the network to compromise between the encoding of low-level and high-level features.
 The main idea of the VRNN is to extend a recurrent neural network with latent random variables, therefore improving the representational power of the model.
-Such high-level variables are commonly used in VAEs to model multimodal conditional distributions, approximating real world data variety~\cite{kingma2013auto}.
+Such high-level variables are commonly used in Variable Auto-encoders (VAEs) to model multimodal conditional distributions, approximating real world data variety~\cite{kingma2013auto}.
 Chung et al. proposes to extend the VEA model by inducing temporal dependencies using the hidden state vector of a RNN across neighboring timesteps.
 
 
 
 \subsection{Training}
 
-% Normalisierung eingangsdaten: To-do
-
 
 \begin{figure}
 \includegraphics[width=0.9\textwidth]{img/vrnn-arch.png}
+\caption{The VRNN consists of all components from conventional Variational Auto-encoder but is paired with recurrent layers to allow learning from sequential data using a single state vector $h$.}
 \label{fig:vrnn-arch}
-\caption{VRNN architecture} % To-DO!
 \end{figure}
 
 
@@ -201,37 +199,25 @@ It handles the state vector $h_t$ and generates both $\mu^{prior}$ and $\sigma^{
 The encoder $\varphi^{enc}$ is used during training only.
 It takes $\varphi^x$ and the state vector $h_t$ and calculates $\mu^{enc}$ and $\sigma^{enc}$ (3).
 Now $z$ is drawn from $\mathcal{N}(\mu^{enc}, \sigma^{enc})$ (4).
-Another network $\varphi^z$ is used to find features in $z$ (5).
+Another network $\varphi^z$ is used to extract features from $z$ (5).
 The decoder is used to replicate the input data $x$.
 It therefore takes the concatenated $\varphi^z$ and $h_t$ into consideration (6).
 Also, $z$ and $h$ are passed to the RNN to determine a new state vector $h_{t+1}$ (7).
 Lastly the overall loss is calculated (8).
-It is composed of the KLD from $\varphi^{prior}$ and $\varphi^{dec}$ to make them similar, as well as a reconstruction loss that compares $\mu^{dec}$ to $x$. 
-
-
-
-% Describe p, q, ...
-
-%conditional prior / generative model - p(x | z)
-%approximate posterior / inference model - q(z | x)
-%prior over latent random variables - p(z)
-
-
-The model can be trained by minimizing the Kullback–Leibler divergence (KLD) - first term - and maximizing the likelihood of an $x$ given a $z$ - second term).
-This can be seen as adding a regulizer to a simple auto encoder to ensure that the generated distributions have a certain form.
+It is composed of the KLD from $\varphi^{prior}$ and $\varphi^{dec}$ to make them similar, as well as a reconstruction loss that rates the networks ability to reconstruct input data.
+Using probabilistic terms $q(\mathbf{z}_t | \mathbf{x}_{\le t}, \mathbf{z}_{<t})$ for the encoder distribution, $p(\mathbf{x}_t | \mathbf{z}_{\le t}, \mathbf{x}_{<t})$ for the decoder distribution and $p(\mathbf{z}_t | \mathbf{x}_{<t}, \mathbf{z}_{<t})$ for the prior distribution the loss is calculated as follows:
 $$
-E_{\mathbf{z} \le T | \mathbf{x} \le T} = \left[ \sum_{t=1}^T -(KL(q(\mathbf{z}_t | \mathbf{x}_{\le t}, \mathbf{z}_{<t}) || p(\mathbf{z}_t | \mathbf{x}_{<t}, \mathbf{z}_{<t})) + log(p(\mathbf{x}_t | \mathbf{z}_{\le t, \mathbf{x}_{<t}}))) \right]
+E_{\mathbf{z} \le T | \mathbf{x} \le T} = \left[ \sum_{t=1}^T -(KLD(q(\mathbf{z}_t | \mathbf{x}_{\le t}, \mathbf{z}_{<t}) || p(\mathbf{z}_t | \mathbf{x}_{<t}, \mathbf{z}_{<t})) + log(p(\mathbf{x}_t | \mathbf{z}_{\le t}, \mathbf{x}_{<t}))) \right]
 $$
-
-The KLD between the two distributions $Q$ and $P$ with respect to $Q$ is a measurment of similarity between two distributions.
-Since the probabilistic Encoder $q(z|x)$ is used to approximate the hard to compute posterior $p(x|z)$, $Q$ needs to be as similar to $P$ as possible.
-This means that the KL divergence needs to be minimized, which is identical to maximizing the lower variational bound~\cite{kingma2013auto}. 
-
-
+The KLD between the two distributions $Q$ and $P$ with respect to $Q$ is a measure of similarity between two distributions.
+During training the prior is conditioned by the encoder, respectively the approximate posterior, to be yield similar output.
+The property is forced by minimizing the KLD, which is equivalent to maximizing the lower variational bound~\cite{kingma2013auto}.
+The reconstruction error is the Gaussian negative log-likelihood and forces the network to learn to reconstruct the input data during training.
 In this work Gaussian distribution models are used to model real world variability.
-However, In theory the model can be trained using any probability distribution, like the Gaussian Mixture Model (GMM).
+However, in theory the model can be trained using different probability models like the Gaussian Mixture Model (GMM).
+All input samples are normalized using the global dataset mean and standard deviation.
 
-For all experiments the follwing parameters prooved to be most effective
+For music experiments the following parameters proved to be most effective
 \begin{center}
 \begin{tabular}{ r | l | l }
 variable name & value & description \\
@@ -248,13 +234,8 @@ sample rate & 16000 & \\
 \end{tabular}
 \end{center}
 
-All input sample have been normalized using the global dataset mean and standard deviation.
 
-
-% Implementierungsdetaills
-Since the original source code was using the Theano ML library, I cloned a public PyTorch implementation~\cite{VRNNgit}.
-However, I found out, that I needed to make quite many adaptions to fit the original version.
-The biggest changes include a new data loader class, adding the correct error function, using more dense layers in all components and make the code more GPU-friendly. 
+Since the original source code uses the Theano ML library, I started from a public PyTorch implementation \cite{VRNNgit} for generating handrwritten digits and expanded the models architecture according to the original description used for the Blizzard experiment.
 
 
 
@@ -264,18 +245,11 @@ To extract features from $z$ the signal passes $\varphi_z$.
 Finally $\varphi^{dec}$ is used to decode $z$.
 Since the decoder is trained with Gaussian KLD loss, the decoder yields $\mu^{dec}$ and $\sigma^{dec}$.
 Output values can be drawn from $\mathcal{N}(\mu^{dec}, \sigma^{dec})$.
-However, in the original implementantation $\mu^{dec}$ is used as output.
+However, in the original implementation $\mu^{dec}$ is used as output.
 
 To produce sound of more than 200 samples, $h_t$ needs to be adjusted and fed back into the model.
-In order to do that $x$ is drawn from $\mathcal{N}(\mu^{dec}, \sigma^{dec})$ and passed through the feature xtractor $\varphi^x$.
+In order to do that $x$ is drawn from $\mathcal{N}(\mu^{dec}, \sigma^{dec})$ and passed through the feature extractor $\varphi^x$.
 Finally the encoded $x$ and $z$ are passed to the RNN and $h_{t+1}$ can be calculated.
-
-
-
-
-
-
-
 
 
 
@@ -304,7 +278,7 @@ This expanded model can be found on the authors GIT repository~\cite{donahue2019
 
 
 \subsection{Architecture}
-See figure \ref{fig:WaveGan-arch} for a visualization of the graph with parameters.
+See Figure \ref{fig:WaveGan-arch} for a visualization of the graph with parameters.
 The generator network is trained to map a low-dimensional latent vector $z$ to a high-dimensional data output.
 First the network applies a fully connected layer with $512d$ output nodes to $z$, where $d$ is used to adjust the models size.
 The output vector is then reshaped, since an additional dimension is needed for the sound channel.
@@ -354,12 +328,19 @@ The model was trained using both a batch size $b$ and a scale factor $d$ of $64$
 
 
 \section{Experiments}
-SampleRNN, VRNN and WaveGAN have been rained on
+Different music genres come with different sets of features.
+This challenges the networks to solve very diverse problems.
+For example a task for a network learning to produce Hip-Hop might be to arrange uniform beat elements with consistent timing to produce a rhythm section, since drums often are the only instrument in Hip-Hop.
+Piano music on the other hand is often very expressive and has no constant timing.
+Instead of a fixed timing, it is much more important for the network to learn arranging combinations of harmonizing frequencies to generate plausible motifs.
+
+To cover a lot of musical variety SampleRNN, VRNN and WaveGAN are trained on
 \begin{itemize}
- \item piano music (Felix Mendelssohn: Lieder ohne Worte, about 2 hours)
- \item instrumental metal (Intervals: The Way Forward + A Voice Within (Instrumental Version) + In Time, 1 hour and 53 minutes) 
- \item hip-hop (Cypress Hill: Cypress Hill, 46 minutes)
+ \item Piano music (Felix Mendelssohn: Lieder ohne Worte, about 2 hours)
+ \item Instrumental Metal (Intervals: The Way Forward + A Voice Within (Instrumental Version) + In Time, 1 hour and 53 minutes) 
+ \item Hip-Hop (Cypress Hill: Cypress Hill, 46 minutes)
 \end{itemize}
+
 
 For SampleRNN the music was split into 8 second, for VRNN into 0.5 second and for WaveGAN into 4 second chunks.
 It should be mentioned that the music format used in all experiments is mp3.
@@ -375,7 +356,7 @@ They can be found on the repository page \textbf{sound-results.html}.
 
 
 
-
+\section{Evaluation}
 \textbf{SampleRNN}\\
 Despite its relative complicated architecture, the SampleRNN learned to produce first musical features like drum hits, scratches and screams after only about 5 minutes of training.
 It takes much more training to reduce noise and generate more complex features like guitar riffs.
@@ -392,7 +373,7 @@ However, assuming that there is enough memory, increasing generation batch size 
 \begin{figure}
 \includegraphics[width=0.45\textwidth]{img/sample-rnn-train.png}
 \includegraphics[width=0.45\textwidth]{img/sample-rnn-val.png}
-\caption{Occasional fluctuations can be seen in the SampleRNN trainig loss (left) as well as in the validation loss (right). There seems to be a point where the Piano dataset (orange, 120k) and the Hip-Hop dataset (red, 40k) "unlearn" certain features. Only with the Metal dataset, the model is able to lower trainings loss continuously. Experimenting with Dropout layers in the sample-level module resultet in a non-increasing validation loss, but seemed to compromise sound quality.}
+\caption{Occasional fluctuations can be seen in the SampleRNN trainig loss (left) as well as in the validation loss (right). There seems to be a point where the Piano dataset (orange, 120k) and the Hip-Hop dataset (red, 40k) "unlearn" certain features. Only with the Metal dataset, the model is able to lower trainings loss continuously. Experimenting with Dropout layers in the sample-level module resulted in a non-increasing validation loss, but seemed to compromise sound quality.}
 \label{fig:samplernn-eval}
 \end{figure}
 
@@ -411,7 +392,7 @@ However, exploding gradients are also caused by small hyper-parameter changes, f
 
 Despite experimenting with different parameter combinations and error functions used by \cite{chung2015recurrent} for speech generation, no trained model seemed capable of learning to produce whole motifs. 
 At most very distorted features like drum hits, single notes or scratches are generated.
-A known problem with auto-encoders that process images is that they tend to produce blurry due to the nature of the error function~\cite{larsen2015autoencoding}.
+A known problem with Variational Auto-encoders that process images is that they tend to produce blurry due to the nature of the error function~\cite{larsen2015autoencoding}.
 Especially when listening to the Metal and the Piano experiment, one could assume that this happens with music produced by the VRNN as well.
 
 In terms of generation speed, the VRNN is considerably faster than the SampleRNN with about 50 seconds for 5 minutes of audio.
@@ -462,7 +443,7 @@ More research is necessary to improve sound quality as well as training stabilit
 
 \newpage
 
-\bibliographystyle{plain} % Literaturverzeichnis
+\bibliographystyle{plain}
 \begin{btSect}{doc} % mit bibtopic Quellen trennen
 \section*{Sources}
 \btPrintCited
