@@ -181,7 +181,6 @@ if __name__ == '__main__':
         '--lr', type=float,
         help='learning rate'
     )
-    
     parser.add_argument(
         '--alpha', type=float,
         help='Leaky Relu factor'

@@ -19,20 +19,20 @@ inference, prior, and generating models."""
 
 
 class VRNN(nn.Module):
-    def __init__(self, x_dim, z_dim, n_layers, device, bias=False):
+    def __init__(self, params, device, bias=False):
         super(VRNN, self).__init__()
 
-        self.x_dim = x_dim
-        self.z_dim = z_dim
-        self.n_layers = n_layers
+        self.x_dim = params['x_dim']
+        self.z_dim = params['z_dim']
+        self.n_layers = params['n_rnn_layers']
         self.device = device
         
-        self.num_x_features = 600
-        self.num_z_features = 500
-        self.num_h_features = 2000
-        self.num_enc_features = 500
-        self.num_dec_features = 600
-        self.num_prior_features = 500
+        self.num_x_features = params['x_f_dim']
+        self.num_z_features = params['z_f_dim']
+        self.num_h_features = params['h_dim']
+        self.num_enc_features = params['enc_dim']
+        self.num_dec_features = params['dec_dim']
+        self.num_prior_features = params['prior_dim']
         
         self.step = 0
         self.writer = SummaryWriter("Parameter-Checker")
@@ -40,7 +40,7 @@ class VRNN(nn.Module):
 
         #feature-extracting transformations
         self.phi_x = nn.Sequential(
-            nn.Linear(x_dim, self.num_x_features),
+            nn.Linear(self.x_dim, self.num_x_features),
             nn.ReLU(),
             nn.Linear(self.num_x_features, self.num_x_features),
             nn.ReLU(),
@@ -50,7 +50,7 @@ class VRNN(nn.Module):
             nn.ReLU())
         
         self.phi_z = nn.Sequential(
-            nn.Linear(z_dim, self.num_z_features),
+            nn.Linear(self.z_dim, self.num_z_features),
             nn.ReLU(),
             nn.Linear(self.num_z_features, self.num_z_features),
             nn.ReLU(),
@@ -70,9 +70,9 @@ class VRNN(nn.Module):
             nn.Linear(self.num_enc_features, self.num_enc_features),
             nn.ReLU()
             )
-        self.enc_mean = nn.Linear(self.num_enc_features, z_dim)
+        self.enc_mean = nn.Linear(self.num_enc_features, self.z_dim)
         self.enc_std = nn.Sequential(
-            nn.Linear(self.num_enc_features, z_dim),
+            nn.Linear(self.num_enc_features, self.z_dim),
             nn.Softplus())
         self.enc_std[0].bias.data.fill_(0.6)
 
@@ -86,9 +86,9 @@ class VRNN(nn.Module):
             nn.ReLU(),
             nn.Linear(self.num_prior_features, self.num_prior_features),
             nn.ReLU())
-        self.prior_mean = nn.Linear(self.num_prior_features, z_dim)
+        self.prior_mean = nn.Linear(self.num_prior_features, self.z_dim)
         self.prior_std = nn.Sequential(
-            nn.Linear(self.num_prior_features, z_dim),
+            nn.Linear(self.num_prior_features, self.z_dim),
             nn.Softplus())
         self.prior_std[0].bias.data.fill_(0.6)
 
@@ -102,15 +102,15 @@ class VRNN(nn.Module):
             nn.ReLU(),
             nn.Linear(self.num_dec_features, self.num_dec_features),
             nn.ReLU())
-        self.dec_mean = nn.Linear(self.num_dec_features, x_dim)
+        self.dec_mean = nn.Linear(self.num_dec_features, self.x_dim)
         self.dec_std = nn.Sequential(
-            nn.Linear(self.num_dec_features, x_dim),
+            nn.Linear(self.num_dec_features, self.x_dim),
             nn.Softplus())
         self.dec_std[0].bias.data.fill_(0.6)
 
 
         #recurrence
-        self.rnn = nn.GRU(self.num_x_features + self.num_z_features, self.num_h_features, n_layers, bias) #(input_size, hidden_size, n_layers, bias)
+        self.rnn = nn.GRU(self.num_x_features + self.num_z_features, self.num_h_features, self.n_layers, bias) #(input_size, hidden_size, n_layers, bias)
 
 
     def forward(self, x):

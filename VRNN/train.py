@@ -5,14 +5,12 @@ import torch.nn as nn
 import torch.utils
 import torch.utils.data
 import numpy as np
+import argparse
+
 from tensorboardX import SummaryWriter
 from dataset import FolderDataset, DataLoader
-from torchvision import datasets, transforms
 from torch.autograd import Variable
 from librosa.output import write_wav
-import time
-import datetime
-import matplotlib.pyplot as plt 
 from model import VRNN
 
 
@@ -23,33 +21,33 @@ inference, prior, and generating models."""
 
 
 
-#hyperparameters
-gpu = 1
-x_dim = 200 # Frame Length, corresponds to 200 consecutive raw samples
-z_dim = 200 # 
-n_layers =  1
-n_epochs = 10000
-clip = 0.5
-learning_rate = 0.0003
-batch_size = 128
-seed = 20126
-print_every = 1#50
-save_every = 10
-test_seq_len = 300
+default_params = {
+    'gpu': 1,
+    'lr': 0.0003,
+    'batch_size': 128,
+    'x_dim': 200,
+    'z_dim': 200,
+    'clip': 0.5,
+    'n_rnn_layers': 1,
+    'epochs': 10000,
+    'save_interval': 10,
+    'test_seq_len': 300,
+    'x_f_dim': 600,
+    'z_f_dim': 500,
+    'h_dim': 2000,
+    'enc_dim': 500,
+    'dec_dim': 600,
+    'prior_dim': 500,
+    'sample_rate': 16000
+}
 
 
-dataset_root = "datasets"
-dataset_name = "intervals_full"#"test-shorter"# #"cypress"
-results_path = "results"
 
 global_step = 0
 
-os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
 
-def make_data_loader(bs, seq_len, dataset_root, dataset_name):
-    path = os.path.join(dataset_root, dataset_name)
+def make_data_loader(bs, seq_len, path):
     def data_loader(split_from, split_to, eval):
         dataset = FolderDataset(
             path, split_from, split_to
@@ -65,74 +63,51 @@ def make_data_loader(bs, seq_len, dataset_root, dataset_name):
 
 
 
-def train(epoch, writer):
+def train(epoch, writer, train_loader, params):
     global global_step
     train_loss = 0
-    #global_step = 0
     for batch_idx, data in enumerate(train_loader):
 
-        #print("\ntrain start", torch.sum(torch.isnan(data)), torch.sum(torch.isinf(data)))
-
-        #transforming data
-        #data = Variable(data)
-        #to remove eventually
-        
         # e.g. [128, 1, 28, 28] -> [28, 128, 28] - 28 sliced 128 dimensional blocks, each 28 elements
         data = Variable(data.squeeze().transpose(0, 1))
     
-        # normalize input data so that mean = 0 and in range[0,1]
-        #data = (data - data.min().data) / (data.max().data - data.min().data)
-        
         #forward + backward + optimize
         optimizer.zero_grad()
         kld_loss, nll_loss, _, _ = model(data.to(device))
-        
-
         loss = kld_loss + nll_loss
-
 
         if loss < 5000000:
             loss.backward()
         
             #grad norm clipping, only in pytorch version >= 1.10
-            nn.utils.clip_grad_norm_(model.parameters(), clip)
+            nn.utils.clip_grad_norm_(model.parameters(), params['clip'])
             optimizer.step()
         
-        
-        #print(torch.isnan(loss).item(), torch.isnan(kld_loss).item(), torch.isnan(nll_loss).item(), torch.sum(torch.isnan(data)).item())
-        
 
-        
         writer.add_scalar('train/KLD loss', kld_loss, global_step)
         writer.add_scalar('train/NLL loss', nll_loss, global_step)
         writer.add_scalar('train/Overall loss', loss, global_step)
-
-
         
         
-        #printing
-        if batch_idx % print_every == 0:
+        #printing progress
+        if batch_idx % 1 == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\t KLD Loss: {:.6f} \t NLL Loss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader),
-                kld_loss.data / batch_size,
-                nll_loss.data / batch_size))
+                kld_loss.data / params['batch_size'],
+                nll_loss.data / params['batch_size']))
 
-            
-        
 
-        global_step += 1
-        
+        global_step += 1        
         train_loss += loss.data
         
-        
-
+        break
 
     print('====> Epoch: {} Average loss: {:.4f}'.format(
         epoch, train_loss / len(train_loader.dataset)))
 
 
-def test(epoch, writer):
+def test(epoch, writer, test_loader,params):
     """uses test data to evaluate 
     likelihood of the model"""
     
@@ -161,9 +136,9 @@ def test(epoch, writer):
 
 
 
-def generate(epoch, writer):
+def generate(epoch, writer, params):
     model.eval()
-    samples = model.sample(test_seq_len)
+    samples = model.sample(params['test_seq_len'])
     model.train()
     samples = samples.flatten().cpu().float().numpy()
     
@@ -171,9 +146,9 @@ def generate(epoch, writer):
     
     norm_samples = ((samples[:] - samples[:].min()) / (0.00001 + (samples[:].max() - samples[:].min()))) * 1.9 - 0.95
 
-    writer.add_audio('test/sound{}'.format(global_step), norm_samples, global_step, sample_rate=16000)
-    
-    write_wav(os.path.join(results_path, dataset_name, "sample-{:04d}.wav".format(epoch)), samples, sr=16000, norm=True)
+    writer.add_audio('test/sound{}'.format(global_step), norm_samples, global_step, sample_rate=params['sample_rate'])
+    dataset_name = os.path.split(params['dataset'])[-1]
+    write_wav(os.path.join(params['output_dir'], dataset_name, "sample-{:04d}.wav".format(epoch)), samples, sr=params['sample_rate'], norm=True)
     writer.add_scalar('test/sample average', np.mean(samples), global_step)
     writer.add_scalar('test/sample min', samples.min(), global_step)
     writer.add_scalar('test/sample max', samples.max(), global_step)
@@ -182,33 +157,120 @@ def generate(epoch, writer):
         
 if __name__ == "__main__":
     
-    #manual seed
-    #torch.manual_seed(seed)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        argument_default=argparse.SUPPRESS
+    )
+    
+    
+    parser.add_argument(
+        '--gpu', type=int,
+        help='which GPU to use'
+    )
+    parser.add_argument(
+        '--lr', type=float,
+        help='learning rate'
+    )
+    parser.add_argument(
+        '--clip', type=float,
+        help='clip value for gradient clipping'
+    )
+    parser.add_argument(
+        '--batch_size', type=int,
+        help='the batch size'
+    )
+    parser.add_argument(
+        '--x_dim', type=int,
+        help='number of input sample per window'
+    )
+    parser.add_argument(
+        '--z_dim', type=int,
+        help='dimension of the latent variable z'
+    )
+    parser.add_argument(
+        '--n_rnn_layers', type=int,
+        help='number of stacked RNN layers'
+    )
+    parser.add_argument(
+        '--epochs', type=int,
+        help='stop training after this amount of epochs'
+    )
+    parser.add_argument(
+        '--save_interval', type=int,
+        help='save the model in this interval'
+    )
+    parser.add_argument(
+        '--test_seq_len', type=int,
+        help='length of test samples after each epoch'
+    )
+    parser.add_argument(
+        '--x_f_dim', type=int,
+        help='number of intermediate features in phi-x'
+    )
+    parser.add_argument(
+        '--z_f_dim', type=int,
+        help='number of intermediate features in phi-z'
+    )
+    parser.add_argument(
+        '--enc_dim', type=int,
+        help='number of intermediate features in the encoder'
+    )
+    parser.add_argument(
+        '--dec_dim', type=int,
+        help='number of intermediate features in the decoder'
+    )
+    parser.add_argument(
+        '--h_dim', type=int,
+        help='dimension of state vector h'
+    )
+    parser.add_argument(
+        '--prior_dim', type=int,
+        help='number of intermediate features in the prior'
+    )
+    parser.add_argument(
+        '--sample_rate', type=int,
+        help='sample rate of the used music'
+    )
+    parser.add_argument(
+        '--dataset', required=True,
+        help='name of a prepaired folder with music snippets as .wav or .mp3)'
+    )
+    parser.add_argument(
+        '--output_dir', required=True,
+        help='output directory for saved graphs, samples and tensorboard logs'
+    )
+    
 
     
-    data_loader = make_data_loader(batch_size,
-                                    x_dim, dataset_root, dataset_name)
+    parser.set_defaults(**default_params)
+    params = vars(parser.parse_args())
+    
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(params['gpu'])
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    data_loader = make_data_loader(params['batch_size'],
+                                    params['x_dim'], params['dataset'])
     train_loader = data_loader(0, 0.9, eval=False)
     test_loader = data_loader(0.9, 1.0, eval=True)
     
-    writer = SummaryWriter(os.path.join(results_path, dataset_name))
+    dataset_name = os.path.split(params['dataset'])[-1]
+    writer = SummaryWriter(os.path.join(params['output_dir'], dataset_name))
 
-    model = VRNN(x_dim, z_dim, n_layers, device).to(device)
+    model = VRNN(params, device).to(device)
     
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    #optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=params['lr'])
 
 
-    for epoch in range(1, n_epochs + 1):
+    for epoch in range(1, params['epochs'] + 1):
         
         #training + testing
-        train(epoch, writer)
-        #test(epoch, writer)
-        generate(epoch, writer)
+        train(epoch, writer, train_loader, params)
+        test(epoch, writer, test_loader, params)
+        generate(epoch, writer, params)
         
         
         #saving model
-        if epoch % save_every == 1:
+        if epoch % params['save_interval'] == 1:
             fn = 'saves/vrnn_state_dict_'+str(epoch)+'.pth'
             torch.save(model.state_dict(), fn)
             print('Saved model to '+fn)
