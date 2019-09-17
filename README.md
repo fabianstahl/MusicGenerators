@@ -1,19 +1,16 @@
 # Comparing sample-based music generation algorithms using deep learning
 
-
-
-
-
-
-
 This work was made during a project in summer 2019.
+
+Please have a look at the documentation: **Doc/Doc/doc.pdf** 
+
 Fabian Stahl, University of applied Science, 65185 Wiesbaden
 
-#SampleRNN
+# SampleRNN
 
 SampleRNN Paper: <https://arxiv.org/abs/1612.07837>
 
-##Training
+## Training
 
 ```
 usage: train.py [-h] --exp EXP --frame_sizes FRAME_SIZES [FRAME_SIZES ...]
@@ -91,11 +88,11 @@ optional arguments:
 ```
 
 
-#VRNN
+# VRNN
 
 VRNN Paper: <https://arxiv.org/abs/1506.02216>
 
-##Training
+## Training
 
 ```
 usage: train.py [-h] [--gpu GPU] [--lr LR] [--clip CLIP]
@@ -147,9 +144,9 @@ optional arguments:
 
 
 
-#WaveGAN
+# WaveGAN
 WaveGAN Paper: <https://arxiv.org/abs/1802.04208>
-##Training
+## Training
 ```
 usage: train.py [-h] [--gpu GPU] [--lr LR] [--alpha ALPHA]
                 [--phaseshuffle_n PHASESHUFFLE_N] [--batch_size BATCH_SIZE]
