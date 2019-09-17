@@ -1,7 +1,6 @@
 import torch
 from custom_layers import PhaseShuffle, Reshape
 
-# torch.nn.Conv1Transpose1d(in_ch, out_ch, kernel_size, stride)
 
 class Generator(torch.nn.Module):
     def __init__(self, c = 1, d = 64, samples = 16384):
